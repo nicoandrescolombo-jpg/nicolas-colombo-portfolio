@@ -1,0 +1,81 @@
+================================================================================
+  GUÍA PASO A PASO: CREAR Y CONECTAR LA BASE DE DATOS (SUPABASE)
+  Nicolas Colombo — Animator 2D Portfolio
+================================================================================
+
+Para que el portafolio guarde tus proyectos, suba las animaciones de portada y 
+te permita gestionar todo desde el panel /admin, usaremos Supabase (gratuito).
+
+Sigue estos sencillos pasos:
+
+--------------------------------------------------------------------------------
+PASO 1: CREAR TU PROYECTO EN SUPABASE
+--------------------------------------------------------------------------------
+1. Entra a: https://supabase.com y regístrate o inicia sesión con tu cuenta de GitHub / Google.
+2. Haz clic en "New Project".
+3. Completa los datos:
+   - Name: Nicolas Colombo Portfolio (o el nombre que prefieras).
+   - Database Password: Elige una contraseña segura (guárdala bien).
+   - Region: Elige la más cercana (ej: South America - São Paulo o US East).
+4. Haz clic en "Create new project" y espera 1 a 2 minutos hasta que termine de crearse.
+
+
+--------------------------------------------------------------------------------
+PASO 2: EJECUTAR EL SCRIPT DE BASE DE DATOS
+--------------------------------------------------------------------------------
+1. En el panel izquierdo de tu proyecto en Supabase, ve al icono "SQL Editor".
+2. Haz clic en "New query" (botón verde arriba).
+3. Abre el archivo que preparé en tu proyecto:
+   "nicolas-colombo-portfolio/supabase/schema_completo.sql"
+4. Copia TODO el contenido de ese archivo y pégalo en el editor SQL de Supabase.
+5. Haz clic en el botón "Run" (abajo a la derecha o arriba).
+6. Verás el mensaje "Success. No rows returned".
+   ¡Listo! Ya se crearon las tablas 'projects', 'project_media', 'site_settings' 
+   y todas las reglas de seguridad RLS.
+
+
+--------------------------------------------------------------------------------
+PASO 3: CREAR LOS BUCKETS DE ALMACENAMIENTO (STORAGE)
+--------------------------------------------------------------------------------
+En el menú lateral de Supabase, ve a "Storage":
+1. Haz clic en "New bucket":
+   - Name: hero
+   - Activa la casilla: "Public bucket" (importante para que se vea el video en la web)
+   - Haz clic en "Save".
+
+2. Haz clic nuevamente en "New bucket":
+   - Name: projects
+   - Activa la casilla: "Public bucket" (importante para que se vean las imágenes y GIFs)
+   - Haz clic en "Save".
+
+
+--------------------------------------------------------------------------------
+PASO 4: CREAR TU USUARIO ADMINISTRADOR
+--------------------------------------------------------------------------------
+Para que solo tú puedas ingresar a /admin:
+1. En el menú lateral de Supabase, ve a "Authentication" > "Users".
+2. Haz clic en "Add user" > "Create user".
+3. Ingresa tu correo (ej: nicolascolombo.art@gmail.com) y tu contraseña para el panel.
+4. Asegúrate de marcar "Auto Confirm User?" para poder entrar de inmediato sin validar correo.
+5. Haz clic en "Create user".
+
+
+--------------------------------------------------------------------------------
+PASO 5: OBTENER TUS CLAVES Y CONECTAR LA APLICACIÓN
+--------------------------------------------------------------------------------
+1. En Supabase, ve al icono de engranaje abajo a la izquierda "Project Settings" > "API".
+2. Copia estos dos valores:
+   - Project URL (ej: https://xyzcompany.supabase.co)
+   - anon / public key (una clave larga que empieza con eyJhbGci...)
+
+3. En la carpeta de tu proyecto en tu computadora:
+   "c:\Users\nicoa\Documents\Animación\Pagina web\nicolas-colombo-portfolio"
+
+4. Crea un archivo llamado: .env.local
+   Y pega tus valores de la siguiente manera:
+
+   NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-clave-anon-aqui
+
+5. Guarda el archivo. ¡La aplicación se conectará automáticamente a tu base de datos!
+================================================================================
