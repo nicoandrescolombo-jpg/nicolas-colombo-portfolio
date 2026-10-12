@@ -27,7 +27,7 @@ export default function PublicContactForm({ targetEmail }: ContactFormProps) {
 
     setLoading(true)
     try {
-      // 1. Guardar en la base de datos de CLIENTES
+      // 1. Guardar en base de datos y disparar envío automático
       const res = await submitClientInquiry({ name, email, message })
       if (!res.success) {
         throw new Error(res.error)
@@ -35,11 +35,6 @@ export default function PublicContactForm({ targetEmail }: ContactFormProps) {
 
       setSubmitted(true)
       toastSuccess('¡Mensaje enviado con éxito!')
-
-      // 2. Abrir cliente de correo preparado para nicoandres.colombo@gmail.com
-      const mailtoSubject = encodeURIComponent(`Nuevo contacto desde portfolio: ${name}`)
-      const mailtoBody = encodeURIComponent(`Hola Nicolas,\n\n${message}\n\n---\nRemitente: ${name}\nEmail: ${email}`)
-      window.location.href = `mailto:${targetEmail}?subject=${mailtoSubject}&body=${mailtoBody}`
     } catch (err: any) {
       toastError(err.message || 'Error al enviar mensaje')
     } finally {

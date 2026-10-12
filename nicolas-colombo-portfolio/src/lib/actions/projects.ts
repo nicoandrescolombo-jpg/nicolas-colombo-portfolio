@@ -190,9 +190,11 @@ export async function updateSiteSettings(key: 'hero' | 'contact' | 'identity', v
 }
 
 
+import { sendInquiryNotification } from '@/lib/utils/email'
+
 /**
  * Submit client inquiry form from public contact section.
- * Saves client name, email and message to Supabase database.
+ * Saves client name, email and message to Supabase database and sends email notification.
  */
 export async function submitClientInquiry(data: { name: string; email: string; message: string }): Promise<ActionResult> {
   try {
@@ -202,15 +204,28 @@ export async function submitClientInquiry(data: { name: string; email: string; m
       return { success: false, error: 'Por favor completa todos los campos' }
     }
 
+    const trimmedName = data.name.trim()
+    const trimmedEmail = data.email.trim()
+    const trimmedMessage = data.message.trim()
+
+    // 1. Guardar en la base de datos de Clientes
     const { error } = await supabase
       .from('clients')
       .insert({
-        name: data.name.trim(),
-        email: data.email.trim(),
-        message: data.message.trim(),
+        name: trimmedName,
+        email: trimmedEmail,
+        message: trimmedMessage,
       })
 
     if (error) throw error
+
+    // 2. Enviar correo a nicoandres.colombo@gmail.com
+    await sendInquiryNotification({
+      name: trimmedName,
+      clientEmail: trimmedEmail,
+      message: trimmedMessage,
+      toEmail: 'nicoandres.colombo@gmail.com',
+    })
 
     return { success: true }
   } catch (err: any) {
