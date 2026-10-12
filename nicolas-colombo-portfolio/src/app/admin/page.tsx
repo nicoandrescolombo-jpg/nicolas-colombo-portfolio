@@ -5,6 +5,8 @@ import { getAllProjectsForAdmin } from '@/lib/queries/projects'
 import StatusBadge from '@/components/ui/StatusBadge'
 import Button from '@/components/ui/Button'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminDashboardPage() {
   const projects = await getAllProjectsForAdmin()
 

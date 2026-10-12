@@ -2,6 +2,8 @@ import React from 'react'
 import { getSiteSettings } from '@/lib/queries/projects'
 import HeroForm from '@/components/admin/HeroForm'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminHeroConfigPage() {
   const settings = await getSiteSettings()
 

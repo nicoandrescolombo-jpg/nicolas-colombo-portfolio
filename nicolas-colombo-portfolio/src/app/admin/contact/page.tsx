@@ -2,6 +2,8 @@ import React from 'react'
 import { getSiteSettings } from '@/lib/queries/projects'
 import ContactForm from '@/components/admin/ContactForm'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminContactConfigPage() {
   const settings = await getSiteSettings()
 

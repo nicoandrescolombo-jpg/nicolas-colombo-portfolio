@@ -5,7 +5,7 @@ import Navigation from '@/components/public/Navigation'
 import ProjectGrid from '@/components/public/ProjectGrid'
 import ContactSection from '@/components/public/ContactSection'
 
-export const revalidate = 60 // ISR revalidation cache
+export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
   const [settings, projects] = await Promise.all([
