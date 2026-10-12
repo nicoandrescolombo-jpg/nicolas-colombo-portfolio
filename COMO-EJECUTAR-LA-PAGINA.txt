@@ -1,0 +1,70 @@
+================================================================================
+  GUÍA RÁPIDA: CÓMO EJECUTAR Y VISUALIZAR EL PORTAFOLIO LOCALMENTE
+  Nicolas Colombo — Animator 2D
+================================================================================
+
+Requisitos ya instalados en tu equipo:
+- Node.js (v24+) y npm (v11+)
+- Git
+
+--------------------------------------------------------------------------------
+PASO 1: ABRIR LA TERMINAL EN LA CARPETA DEL PROYECTO
+--------------------------------------------------------------------------------
+1. Abre PowerShell o CMD (Símbolo del sistema).
+2. Entra a la carpeta del proyecto ejecutando:
+
+   cd "c:\Users\nicoa\Documents\Animación\Pagina web\nicolas-colombo-portfolio"
+
+
+--------------------------------------------------------------------------------
+PASO 2: INSTALAR LAS DEPENDENCIAS (Solo la primera vez)
+--------------------------------------------------------------------------------
+Ejecuta el siguiente comando para descargar los paquetes necesarios:
+
+   npm install
+
+*(Nota: si en PowerShell te muestra advertencia de scripts, puedes usar `npm.cmd install`)*
+
+
+--------------------------------------------------------------------------------
+PASO 3: INICIAR EL SERVIDOR DE DESARROLLO
+--------------------------------------------------------------------------------
+Para levantar la web en tu computadora, ejecuta:
+
+   npm run dev
+
+Verás un mensaje similar a:
+   ▲ Next.js 15
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.x.x:3000
+
+
+--------------------------------------------------------------------------------
+PASO 4: VER LA PÁGINA EN TU NAVEGADOR
+--------------------------------------------------------------------------------
+Abre tu navegador web (Chrome, Edge, Firefox, Brave) y entra a:
+
+   http://localhost:3000
+
+Allí verás:
+- La portada cinemática inicial a pantalla completa (Hero Section).
+- El menú de navegación (Work, About, Contact).
+- La galería asimétrica con proyectos tipo A y tipo B (datos de muestra).
+- La vista de detalle al hacer clic en cualquier proyecto.
+- La sección sobre el artista y los canales de contacto.
+
+
+--------------------------------------------------------------------------------
+ACCESO AL PANEL DE ADMINISTRACIÓN PRIVADO
+--------------------------------------------------------------------------------
+Una vez levantada la página, puedes ingresar al panel desde:
+
+   http://localhost:3000/admin
+
+--------------------------------------------------------------------------------
+¿CÓMO DETENER EL SERVIDOR CUANDO TERMINES?
+--------------------------------------------------------------------------------
+En la terminal donde se está ejecutando, presiona:
+   Ctrl + C
+Y confirma escribiendo 'S' (o 'Y').
+================================================================================
