@@ -174,7 +174,7 @@ export async function updateSiteSettings(key: 'hero' | 'contact' | 'identity', v
 
     const { error } = await supabase
       .from('site_settings')
-      .upsert({ key, value })
+      .upsert({ key, value }, { onConflict: 'key' })
 
     if (error) throw error
 
