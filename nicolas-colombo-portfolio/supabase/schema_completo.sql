@@ -136,3 +136,30 @@ EXCEPTION
   WHEN OTHERS THEN
     NULL;
 END $$;
+
+
+-- ==============================================================================
+-- 10. TABLA: CLIENTS (BANCO DE CLIENTES / CONTACTOS)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.clients (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_clients_email ON public.clients(email);
+CREATE INDEX IF NOT EXISTS idx_clients_created_at ON public.clients(created_at DESC);
+
+ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public can submit contact inquiry" ON public.clients;
+CREATE POLICY "Public can submit contact inquiry"
+  ON public.clients FOR INSERT TO public
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admins can view client inquiries" ON public.clients;
+CREATE POLICY "Admins can view client inquiries"
+  ON public.clients FOR SELECT TO authenticated
+  USING (true);

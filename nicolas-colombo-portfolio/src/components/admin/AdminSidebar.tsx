@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { label: 'Proyectos', href: ADMIN_ROUTES.DASHBOARD, icon: Film },
   { label: 'Portada / Hero', href: ADMIN_ROUTES.HERO, icon: Sparkles },
   { label: 'Contacto & Redes', href: ADMIN_ROUTES.CONTACT, icon: Mail },
+  { label: 'Base de Clientes', href: '/admin/clients', icon: LayoutDashboard },
 ]
 
 export default function AdminSidebar() {

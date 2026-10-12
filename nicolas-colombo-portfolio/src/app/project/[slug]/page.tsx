@@ -99,7 +99,9 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
                   return (
                     <div
                       key={item.id}
-                      className="relative w-full rounded-lg overflow-hidden bg-[#141414] border border-[#252525]"
+                      className={`relative w-full overflow-hidden ${
+                        item.media_type === 'gif' ? 'bg-transparent' : 'rounded-lg bg-[#141414] border border-[#252525]'
+                      }`}
                     >
                       <Image
                         src={src}

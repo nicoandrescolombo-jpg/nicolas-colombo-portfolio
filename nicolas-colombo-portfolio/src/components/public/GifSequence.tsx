@@ -29,7 +29,7 @@ export default function GifSequence({ project }: GifSequenceProps) {
             className="w-full max-w-4xl mx-auto flex flex-col items-center"
           >
             <div
-              className="relative w-full rounded-md overflow-hidden bg-[#121212] border border-[#222222]"
+              className="relative w-full overflow-hidden"
               style={{
                 aspectRatio: `${width} / ${height}`,
               }}

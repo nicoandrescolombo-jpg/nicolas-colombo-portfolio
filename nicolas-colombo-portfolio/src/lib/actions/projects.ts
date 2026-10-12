@@ -188,3 +188,33 @@ export async function updateSiteSettings(key: 'hero' | 'contact' | 'identity', v
     return { success: false, error: err.message || 'Error al guardar configuración' }
   }
 }
+
+
+/**
+ * Submit client inquiry form from public contact section.
+ * Saves client name, email and message to Supabase database.
+ */
+export async function submitClientInquiry(data: { name: string; email: string; message: string }): Promise<ActionResult> {
+  try {
+    const supabase = await createClient()
+
+    if (!data.name?.trim() || !data.email?.trim() || !data.message?.trim()) {
+      return { success: false, error: 'Por favor completa todos los campos' }
+    }
+
+    const { error } = await supabase
+      .from('clients')
+      .insert({
+        name: data.name.trim(),
+        email: data.email.trim(),
+        message: data.message.trim(),
+      })
+
+    if (error) throw error
+
+    return { success: true }
+  } catch (err: any) {
+    console.error('Error in submitClientInquiry:', err)
+    return { success: false, error: err.message || 'Error al enviar mensaje' }
+  }
+}

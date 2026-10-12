@@ -58,12 +58,23 @@ export interface ContactSettings {
   linkedin_url: string | null
   other_links: ContactLink[]
   contact_text: string | null
+  background_type?: 'color' | 'image' | 'video'
+  background_url?: string | null
+  background_overlay_opacity?: number
   visibility: {
     email: boolean
     instagram: boolean
     behance: boolean
     linkedin: boolean
   }
+}
+
+export interface ClientInquiry {
+  id?: string
+  name: string
+  email: string
+  message: string
+  created_at?: string
 }
 
 export interface SiteSettings {

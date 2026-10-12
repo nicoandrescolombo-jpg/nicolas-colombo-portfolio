@@ -1,12 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils/helpers';
-
-// ---------------------------------------------------------------------------
-// Types & constants
-// ---------------------------------------------------------------------------
 
 interface NavLink {
   label: string;
@@ -14,15 +12,11 @@ interface NavLink {
   sectionId: string;
 }
 
+// "Work" removed as requested. Only About and Contact remain.
 const NAV_LINKS: NavLink[] = [
-  { label: 'Work',    href: '#work',    sectionId: 'work'    },
-  { label: 'About',   href: '#about',   sectionId: 'about'   },
-  { label: 'Contact', href: '#contact', sectionId: 'contact' },
+  { label: 'About',   href: '/#about',   sectionId: 'about'   },
+  { label: 'Contact', href: '/#contact', sectionId: 'contact' },
 ];
-
-// ---------------------------------------------------------------------------
-// Framer Motion variants
-// ---------------------------------------------------------------------------
 
 const mobileMenuVariants = {
   closed: {
@@ -55,48 +49,39 @@ const hamburgerBottomVariants = {
   open:   { rotate: -45, y: -6 },
 };
 
-// ---------------------------------------------------------------------------
-// Smooth scroll helper
-// ---------------------------------------------------------------------------
-
 function smoothScrollTo(id: string) {
   const el = document.getElementById(id);
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
 
 interface DesktopLinksProps {
   links: NavLink[];
   activeSection: string;
+  onNavigate: (sectionId: string) => void;
 }
 
-function DesktopLinks({ links, activeSection }: DesktopLinksProps) {
+function DesktopLinks({ links, activeSection, onNavigate }: DesktopLinksProps) {
   return (
-    <nav aria-label="Main navigation" className="hidden md:flex items-center gap-8">
+    <nav className="hidden md:flex items-center gap-8" aria-label="Main navigation">
       {links.map(({ label, href, sectionId }) => {
         const isActive = activeSection === sectionId;
+
         return (
           <a
             key={sectionId}
             href={href}
             onClick={(e) => {
               e.preventDefault();
-              smoothScrollTo(sectionId);
+              onNavigate(sectionId);
             }}
             className={cn(
-              'font-ui text-sm tracking-wider transition-colors duration-200',
-              'relative group',
+              'font-ui text-sm tracking-wider uppercase transition-colors duration-200 relative group',
               isActive ? 'text-[#F5F5F5]' : 'text-[#999999] hover:text-[#F5F5F5]',
             )}
             aria-current={isActive ? 'page' : undefined}
           >
             {label}
-            {/* Underline indicator */}
             <span
               className={cn(
                 'absolute -bottom-0.5 left-0 h-px bg-[#E8FF59]',
@@ -117,10 +102,10 @@ interface MobileMenuProps {
   activeSection: string;
   isOpen: boolean;
   onClose: () => void;
+  onNavigate: (sectionId: string) => void;
 }
 
-function MobileMenu({ links, activeSection, isOpen, onClose }: MobileMenuProps) {
-  // Lock body scroll while open
+function MobileMenu({ links, activeSection, isOpen, onClose, onNavigate }: MobileMenuProps) {
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -161,8 +146,7 @@ function MobileMenu({ links, activeSection, isOpen, onClose }: MobileMenuProps) 
                   onClick={(e) => {
                     e.preventDefault();
                     onClose();
-                    // Small delay so menu closes before scroll
-                    setTimeout(() => smoothScrollTo(sectionId), 350);
+                    setTimeout(() => onNavigate(sectionId), 350);
                   }}
                   className={cn(
                     'font-display italic text-[clamp(2.5rem,8vw,4.5rem)] leading-none',
@@ -177,7 +161,6 @@ function MobileMenu({ links, activeSection, isOpen, onClose }: MobileMenuProps) 
             })}
           </nav>
 
-          {/* Accent line at bottom */}
           <motion.div
             className="absolute bottom-10 w-12 h-px bg-[#E8FF59]/40"
             initial={{ scaleX: 0 }}
@@ -191,12 +174,7 @@ function MobileMenu({ links, activeSection, isOpen, onClose }: MobileMenuProps) 
   );
 }
 
-interface HamburgerButtonProps {
-  isOpen: boolean;
-  onClick: () => void;
-}
-
-function HamburgerButton({ isOpen, onClick }: HamburgerButtonProps) {
+function HamburgerButton({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -204,7 +182,6 @@ function HamburgerButton({ isOpen, onClick }: HamburgerButtonProps) {
       aria-label={isOpen ? 'Close menu' : 'Open menu'}
       className="md:hidden relative z-50 flex flex-col justify-center items-center w-8 h-8 gap-0"
     >
-      {/* Top bar */}
       <motion.span
         className="block w-6 h-px bg-[#F5F5F5] origin-center"
         variants={hamburgerTopVariants}
@@ -212,7 +189,6 @@ function HamburgerButton({ isOpen, onClick }: HamburgerButtonProps) {
         transition={{ duration: 0.3, ease: [0.76, 0, 0.24, 1] }}
         aria-hidden="true"
       />
-      {/* Bottom bar */}
       <motion.span
         className="block w-6 h-px bg-[#F5F5F5] origin-center mt-1.5"
         variants={hamburgerBottomVariants}
@@ -224,31 +200,33 @@ function HamburgerButton({ isOpen, onClick }: HamburgerButtonProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main Navigation component
-// ---------------------------------------------------------------------------
-
 export default function Navigation() {
+  const pathname = usePathname();
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('home');
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // ── Scroll listener ────────────────────────────────────────────────────────
-  useEffect(() => {
-    const THRESHOLD = 80; // px from top before background appears
+  const isHome = pathname === '/';
 
+  useEffect(() => {
+    const THRESHOLD = 80;
     const onScroll = () => {
       setScrolled(window.scrollY > THRESHOLD);
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll(); // run once on mount
+    onScroll();
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // ── IntersectionObserver for active section ────────────────────────────────
   useEffect(() => {
+    if (!isHome) {
+      setActiveSection('');
+      return;
+    }
+
     const sectionIds = ['home', ...NAV_LINKS.map((l) => l.sectionId)];
 
     observerRef.current = new IntersectionObserver(
@@ -271,35 +249,45 @@ export default function Navigation() {
     });
 
     return () => observerRef.current?.disconnect();
-  }, []);
+  }, [isHome]);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const toggleMenu = useCallback(() => setMenuOpen((prev) => !prev), []);
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  const handleNavigate = useCallback(
+    (sectionId: string) => {
+      if (isHome) {
+        smoothScrollTo(sectionId);
+      } else {
+        router.push(`/#${sectionId}`);
+      }
+    },
+    [isHome, router],
+  );
+
   return (
     <>
-      {/* Fixed top bar */}
       <header
         className={cn(
           'fixed top-0 left-0 right-0 z-50',
           'transition-all duration-400 ease-in-out',
-          scrolled || menuOpen
+          scrolled || menuOpen || !isHome
             ? 'bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-white/5'
             : 'bg-transparent',
         )}
       >
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
           <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* Logo */}
-            <a
-              href="#home"
+            {/* Logo NC -> Siempre a la página principal */}
+            <Link
+              href="/"
               onClick={(e) => {
-                e.preventDefault();
-                smoothScrollTo('home');
+                if (isHome) {
+                  e.preventDefault();
+                  smoothScrollTo('home');
+                }
               }}
-              aria-label="Nicolas Colombo — Back to top"
+              aria-label="Nicolas Colombo — Inicio"
               className={cn(
                 'relative z-50',
                 'font-ui font-bold text-xl text-[#F5F5F5]',
@@ -307,10 +295,14 @@ export default function Navigation() {
               )}
             >
               NC
-            </a>
+            </Link>
 
             {/* Desktop links */}
-            <DesktopLinks links={NAV_LINKS} activeSection={activeSection} />
+            <DesktopLinks
+              links={NAV_LINKS}
+              activeSection={activeSection}
+              onNavigate={handleNavigate}
+            />
 
             {/* Mobile hamburger */}
             <HamburgerButton isOpen={menuOpen} onClick={toggleMenu} />
@@ -324,6 +316,7 @@ export default function Navigation() {
         activeSection={activeSection}
         isOpen={menuOpen}
         onClose={closeMenu}
+        onNavigate={handleNavigate}
       />
     </>
   );
