@@ -1,0 +1,33 @@
+# Node
+node_modules/
+.npm
+npm-debug.log*
+
+# Next.js
+.next/
+out/
+
+# Production
+dist/
+build/
+
+# Env files - NEVER commit real credentials
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
