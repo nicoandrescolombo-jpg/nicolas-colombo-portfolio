@@ -1,4 +1,4 @@
-import { Mail, Linkedin, Globe, Instagram } from 'lucide-react';
+import { Mail, Linkedin, Globe, Instagram, type LucideIcon } from 'lucide-react';
 import type { ContactSettings } from '@/types';
 
 interface ContactSectionProps {
@@ -9,7 +9,7 @@ interface ContactLink {
   href: string;
   label: string;
   displayText: string;
-  Icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  Icon: LucideIcon;
   isVisible: boolean;
 }
 
@@ -26,28 +26,28 @@ export default function ContactSection({ settings }: ContactSectionProps) {
       label: `Email Nicolas Colombo`,
       displayText: settings.email ?? '',
       Icon: Mail,
-      isVisible: !!(settings.show_email && settings.email),
+      isVisible: !!(settings.visibility?.email && settings.email),
     },
     {
-      href: settings.instagram ?? '',
+      href: settings.instagram_url ?? '',
       label: 'Nicolas Colombo on Instagram',
       displayText: 'Instagram',
       Icon: Instagram,
-      isVisible: !!(settings.show_instagram && settings.instagram),
+      isVisible: !!(settings.visibility?.instagram && settings.instagram_url),
     },
     {
-      href: settings.behance ?? '',
+      href: settings.behance_url ?? '',
       label: 'Nicolas Colombo on Behance',
       displayText: 'Behance',
       Icon: Globe,
-      isVisible: !!(settings.show_behance && settings.behance),
+      isVisible: !!(settings.visibility?.behance && settings.behance_url),
     },
     {
-      href: settings.linkedin ?? '',
+      href: settings.linkedin_url ?? '',
       label: 'Nicolas Colombo on LinkedIn',
       displayText: 'LinkedIn',
       Icon: Linkedin,
-      isVisible: !!(settings.show_linkedin && settings.linkedin),
+      isVisible: !!(settings.visibility?.linkedin && settings.linkedin_url),
     },
   ];
 
