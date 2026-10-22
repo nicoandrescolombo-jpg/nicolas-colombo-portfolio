@@ -209,7 +209,7 @@ export async function submitClientInquiry(data: { name: string; email: string; m
     const trimmedMessage = data.message.trim()
 
     // 1. Guardar en la base de datos de Clientes
-    const { error } = await supabase
+    const { error: dbError } = await supabase
       .from('clients')
       .insert({
         name: trimmedName,
@@ -217,15 +217,22 @@ export async function submitClientInquiry(data: { name: string; email: string; m
         message: trimmedMessage,
       })
 
-    if (error) throw error
+    if (dbError) {
+      console.error('Supabase clients insert error:', dbError)
+      throw new Error(dbError.message || 'Error al guardar en base de datos')
+    }
 
-    // 2. Enviar correo a nicoandres.colombo@gmail.com
-    await sendInquiryNotification({
-      name: trimmedName,
-      clientEmail: trimmedEmail,
-      message: trimmedMessage,
-      toEmail: 'nicoandres.colombo@gmail.com',
-    })
+    // 2. Intentar enviar correo — un fallo aquí NO cancela el éxito
+    try {
+      await sendInquiryNotification({
+        name: trimmedName,
+        clientEmail: trimmedEmail,
+        message: trimmedMessage,
+        toEmail: 'nicoandres.colombo@gmail.com',
+      })
+    } catch (emailErr: any) {
+      console.warn('Email notification failed (non-fatal):', emailErr.message)
+    }
 
     return { success: true }
   } catch (err: any) {

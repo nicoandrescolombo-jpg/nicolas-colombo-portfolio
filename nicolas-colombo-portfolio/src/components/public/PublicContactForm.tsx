@@ -27,10 +27,15 @@ export default function PublicContactForm({ targetEmail }: ContactFormProps) {
 
     setLoading(true)
     try {
-      // 1. Guardar en base de datos y disparar envío automático
       const res = await submitClientInquiry({ name, email, message })
+
+      // Guard against unexpected undefined response from server action
+      if (!res || typeof res !== 'object') {
+        throw new Error('Respuesta inesperada del servidor. Intenta nuevamente.')
+      }
+
       if (!res.success) {
-        throw new Error(res.error)
+        throw new Error(res.error || 'Error desconocido al enviar mensaje')
       }
 
       setSubmitted(true)
