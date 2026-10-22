@@ -188,17 +188,14 @@ export default function Hero({
           transition={{ delay: 0.3, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="flex flex-col items-center gap-5"
         >
-          {/* Artist name */}
-          <h1
-            className={cn(
-              'font-display text-display-2xl text-[#F5F5F5] font-normal',
-              'italic leading-none tracking-tight',
-              // Responsive sizes as fallback if custom token not resolved
-              'text-[clamp(3rem,10vw,8rem)]',
-            )}
-          >
-            {artistName}
-          </h1>
+          {/* Artist name — SVG logo */}
+          <h1 className="sr-only">{artistName}</h1>
+          <img
+            src="/nicolas-colombo-logo.svg"
+            alt={artistName}
+            className="w-[clamp(260px,55vw,720px)] max-w-full select-none"
+            draggable={false}
+          />
 
           {/* Thin divider */}
           <motion.span
