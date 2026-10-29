@@ -9,6 +9,8 @@ out/
 
 # Cloudflare / OpenNext build output
 .open-next/
+.wrangler/
+.dev.vars
 
 # Production
 dist/

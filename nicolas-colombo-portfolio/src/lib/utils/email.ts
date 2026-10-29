@@ -16,14 +16,15 @@ export async function sendInquiryNotification({
   const apiKey = process.env.RESEND_API_KEY
 
   if (!apiKey) {
-    console.warn('RESEND_API_KEY no configurada. Mensaje guardado en base de datos.')
+    console.error('RESEND_API_KEY no configurada en el Worker. El mensaje se guardó en la base de datos, pero no se envió el mail.')
     return { success: false, reason: 'NO_API_KEY' }
   }
 
   try {
     const resend = new Resend(apiKey)
 
-    const response = await resend.emails.send({
+    // Resend no lanza una excepción cuando rechaza el envío: devuelve { data, error }.
+    const { data, error } = await resend.emails.send({
       from: 'Portfolio Nicolas Colombo <onboarding@resend.dev>',
       to: [toEmail],
       replyTo: clientEmail,
@@ -50,9 +51,15 @@ export async function sendInquiryNotification({
       `,
     })
 
-    return { success: true, response }
-  } catch (error: any) {
-    console.error('Error enviando correo con Resend:', error)
-    return { success: false, error: error.message }
+    if (error) {
+      console.error('Resend rechazó el envío:', error.name, '-', error.message)
+      return { success: false, error: error.message }
+    }
+
+    console.log('Mail enviado con Resend. ID:', data?.id)
+    return { success: true, id: data?.id }
+  } catch (err: any) {
+    console.error('Error enviando correo con Resend:', err?.message ?? err)
+    return { success: false, error: err?.message }
   }
 }
