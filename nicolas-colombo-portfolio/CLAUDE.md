@@ -72,14 +72,12 @@ Fondo `#0A0A0A` · texto `#F5F5F5` / `#999999` · acento `#E8FF59` · surfaces `
 
 ### Rotación de credenciales de Cloudflare
 - Se hizo `npx wrangler login`; el deploy ya no usa token.
-- El token viejo es **"Edit Cloudflare Workers"** (para borrar; confirmar con Nico si ya lo borró).
+- El 28/10 Nico avisó que borró el token de Cloudflare (se asume que el viejo, **"Edit Cloudflare Workers"**). No hace falta crear otro.
 - **"nicolas-colombo-portfolio build token"** se conserva: parece ser el de Workers Builds. Se puede verificar en Workers & Pages → nicolas-colombo-portfolio → Settings → Build.
 
-### Pendiente: GitHub está desactualizado
-- El último commit en GitHub es del 22/10 ("fix: robust error handling in contact form and server action").
-- Le faltan `wrangler.toml`, `open-next.config.ts`, los scripts `build:cloudflare`/`preview`/`deploy` y las devDependencies `@opennextjs/cloudflare` y `wrangler` de `package.json`, el `.gitignore` actualizado, este `CLAUDE.md` y el cambio de `email.ts`.
-- En GitHub, la raíz del repo tiene `COMO-EJECUTAR-LA-PAGINA.txt`, `INSTRUCCIONES-BASE-DE-DATOS.txt`, `package-lock.json` y esta carpeta `nicolas-colombo-portfolio/`. Revisar dónde está la raíz git local antes de hacer commit.
-- Antes de subir: agregar `.dev.vars` y `.wrangler/` al `.gitignore` (`.open-next/` ya está) y revisar con `git status` que no se suba ningún archivo con secretos.
+### GitHub: al día desde el 28/10
+- La raíz git es la carpeta padre (`Pagina web/`), no esta. Las rutas en git empiezan con `nicolas-colombo-portfolio/`.
+- GitHub tiene **push protection**: rechaza pushes con secretos. El 28/10 bloqueó uno porque un commit viejo incluía `.open-next/` con la key de Resend adentro. Se reescribió el historial local antes de subir. `.open-next/`, `.wrangler/` y `.dev.vars` ya están en `.gitignore`.
 
 ### Siguiente objetivo de Nico
 Subir contenido nuevo a la página desde el panel admin.
