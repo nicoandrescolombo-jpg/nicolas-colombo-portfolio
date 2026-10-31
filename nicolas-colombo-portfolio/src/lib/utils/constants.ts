@@ -35,6 +35,7 @@ export const ADMIN_ROUTES = {
   PROJECTS: '/admin/projects',
   NEW_PROJECT: '/admin/projects/new',
   HERO: '/admin/hero',
+  PROFILE: '/admin/profile',
   CONTACT: '/admin/contact',
 } as const
 
@@ -50,3 +51,8 @@ export const DEFAULT_OVERLAY_OPACITY = 0.4
 // Grid layout pattern for projects gallery
 // Repeating pattern: [wide, narrow], [narrow, wide], [full]
 export const GRID_PATTERN = ['wide', 'narrow', 'narrow', 'wide', 'full'] as const
+
+// Textos por defecto del perfil público (se usan si el campo no existe en la base)
+export const DEFAULT_AVAILABILITY = 'Available for studio work'
+export const DEFAULT_BIO =
+  'I’m a 2D animator working in traditional and digital animation, character design and motion sequences, with a focus on timing, weight and body acting. Open to studio positions and freelance work on series, short films and commercials.'

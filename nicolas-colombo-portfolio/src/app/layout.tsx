@@ -1,62 +1,59 @@
-import type { Metadata } from 'next'
-import { Instrument_Serif, Space_Grotesk, Inter, JetBrains_Mono } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
+import { Alegreya, Alegreya_SC } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
 import './globals.css'
 
-const instrumentSerif = Instrument_Serif({
+// Una sola familia: Alegreya, una serif caligráfica de pluma ancha (como el logo),
+// con sus versalitas reales (Alegreya SC) para menú, botones y créditos.
+const alegreya = Alegreya({
   subsets: ['latin'],
-  weight: ['400'],
   style: ['normal', 'italic'],
-  variable: '--font-instrument-serif',
+  variable: '--font-alegreya',
   display: 'swap',
 })
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-space-grotesk',
-  display: 'swap',
-})
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-inter',
-  display: 'swap',
-})
-
-const jetbrainsMono = JetBrains_Mono({
+const alegreyaSC = Alegreya_SC({
   subsets: ['latin'],
   weight: ['400', '500'],
-  variable: '--font-jetbrains-mono',
+  variable: '--font-alegreya-sc',
   display: 'swap',
 })
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  'https://nicolas-colombo-portfolio.nicoandres-colombo.workers.dev'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Nicolas Colombo — Animator 2D',
-    template: '%s | Nicolas Colombo',
+    default: 'Nicolás Colombo — 2D Animator',
+    template: '%s — Nicolás Colombo',
   },
   description:
-    'Portfolio profesional de Nicolas Colombo, animador 2D. Proyectos de animación, walk cycles y secuencias de movimiento.',
-  keywords: ['animación 2D', 'animator', 'portafolio', 'walk cycle', 'Nicolas Colombo'],
-  authors: [{ name: 'Nicolas Colombo' }],
+    'Portfolio and reel of Nicolás Colombo, 2D animator: character animation, timing, weight and body acting.',
+  keywords: ['2D animator', 'character animation', 'animation reel', 'portfolio', 'Nicolás Colombo'],
+  authors: [{ name: 'Nicolás Colombo' }],
   openGraph: {
     type: 'website',
-    locale: 'es_AR',
-    siteName: 'Nicolas Colombo — Animator 2D',
-    title: 'Nicolas Colombo — Animator 2D',
-    description: 'Portfolio profesional de animación 2D.',
+    locale: 'en_US',
+    siteName: 'Nicolás Colombo — 2D Animator',
+    title: 'Nicolás Colombo — 2D Animator',
+    description: 'Reel and selected work of Nicolás Colombo, 2D animator.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Nicolas Colombo — Animator 2D',
-    description: 'Portfolio profesional de animación 2D.',
+    title: 'Nicolás Colombo — 2D Animator',
+    description: 'Reel and selected work of Nicolás Colombo, 2D animator.',
   },
   robots: {
     index: true,
     follow: true,
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#000000',
+  colorScheme: 'dark',
 }
 
 export default function RootLayout({
@@ -65,33 +62,25 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html
-      lang="es"
-      className={`
-        ${instrumentSerif.variable}
-        ${spaceGrotesk.variable}
-        ${inter.variable}
-        ${jetbrainsMono.variable}
-      `}
-    >
-      <body className="bg-bg-primary text-text-primary font-body antialiased selection:bg-accent selection:text-bg-primary">
+    <html lang="en" className={`${alegreya.variable} ${alegreyaSC.variable}`}>
+      <body className="bg-ink text-paper type-body antialiased">
         {children}
         <Toaster
           position="bottom-right"
           toastOptions={{
             style: {
-              background: '#1A1A1A',
-              color: '#F5F5F5',
-              border: '1px solid #333333',
-              borderRadius: '6px',
-              fontFamily: 'var(--font-inter)',
-              fontSize: '14px',
+              background: '#141312',
+              color: '#E8E2D6',
+              border: '1px solid #2E2B27',
+              borderRadius: '2px',
+              fontFamily: 'var(--font-alegreya)',
+              fontSize: '16px',
             },
             success: {
-              iconTheme: { primary: '#44FF88', secondary: '#1A1A1A' },
+              iconTheme: { primary: '#E8E2D6', secondary: '#141312' },
             },
             error: {
-              iconTheme: { primary: '#FF4444', secondary: '#1A1A1A' },
+              iconTheme: { primary: '#E5484D', secondary: '#141312' },
             },
           }}
         />

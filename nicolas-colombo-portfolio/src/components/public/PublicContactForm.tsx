@@ -1,141 +1,143 @@
 'use client'
 
 import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Send, CheckCircle2 } from 'lucide-react'
-import Button from '@/components/ui/Button'
 import { submitClientInquiry } from '@/lib/actions/projects'
-import { toastSuccess, toastError } from '@/components/ui/Toast'
+import { toastError } from '@/components/ui/Toast'
+import Spinner from '@/components/ui/Spinner'
+import { cn } from '@/lib/utils/helpers'
 
-interface ContactFormProps {
-  targetEmail: string
-}
+/*
+ * El formulario imita el encabezado de una hoja de exposición (X-sheet):
+ * una grilla de celdas de línea fina, cada una con su rótulo en versalitas.
+ */
 
-export default function PublicContactForm({ targetEmail }: ContactFormProps) {
+const cell =
+  'relative px-4 pt-3 pb-2 border-paper/15 transition-colors focus-within:bg-paper/[0.04]'
+const label = 'block type-sc text-[0.95rem] text-lead'
+const input =
+  'w-full bg-transparent border-0 p-0 pt-1.5 pb-1 type-body text-paper placeholder:text-lead/60 ' +
+  'focus:outline-none focus-visible:outline-none'
+
+export default function PublicContactForm() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [message, setMessage] = useState('Vi tu trabajo y me interesó mucho. Me gustaría consultar por un proyecto.')
+  const [studio, setStudio] = useState('')
+  const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
-  const [submitted, setSubmitted] = useState(false)
+  const [sentTo, setSentTo] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !email.trim() || !message.trim()) {
-      toastError('Por favor completa todos los campos requeridos')
+      toastError('Add your name, email and a message to send it.')
       return
     }
 
     setLoading(true)
     try {
-      const res = await submitClientInquiry({ name, email, message })
-
-      // Guard against unexpected undefined response from server action
+      const fullMessage = studio.trim()
+        ? `Studio / production: ${studio.trim()}\n\n${message.trim()}`
+        : message.trim()
+      const res = await submitClientInquiry({ name, email, message: fullMessage })
       if (!res || typeof res !== 'object') {
-        throw new Error('Respuesta inesperada del servidor. Intenta nuevamente.')
+        throw new Error('The message could not be sent. Try again, or write to the email on the left.')
       }
-
       if (!res.success) {
-        throw new Error(res.error || 'Error desconocido al enviar mensaje')
+        throw new Error(res.error || 'The message could not be sent. Try again, or write to the email on the left.')
       }
-
-      setSubmitted(true)
-      toastSuccess('¡Mensaje enviado con éxito!')
+      setSentTo(email.trim())
+      setName('')
+      setStudio('')
+      setMessage('')
     } catch (err: any) {
-      toastError(err.message || 'Error al enviar mensaje')
+      toastError(err.message || 'The message could not be sent.')
     } finally {
       setLoading(false)
     }
   }
 
-  if (submitted) {
+  if (sentTo) {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-xl mx-auto p-8 rounded-lg bg-[#141414]/90 border border-emerald-500/30 text-center space-y-4 backdrop-blur-md"
-      >
-        <div className="w-12 h-12 rounded-full bg-emerald-500/10 text-emerald-400 mx-auto flex items-center justify-center">
-          <CheckCircle2 size={24} />
-        </div>
-        <h3 className="font-display italic text-2xl text-text-primary">
-          ¡Gracias por tu mensaje, {name}!
-        </h3>
-        <p className="font-body text-xs text-text-secondary max-w-md mx-auto leading-relaxed">
-          Tus datos se registraron correctamente. Me pondré en contacto contigo a la brevedad.
+      <div className="border border-paper/15 p-6 space-y-4" role="status">
+        <p className="type-display text-display-md text-paper">Message sent</p>
+        <p className="type-body text-lead max-w-[44ch]">
+          Thanks for writing. I&apos;ll reply to <span className="text-paper">{sentTo}</span> as soon as I can.
         </p>
         <button
           type="button"
-          onClick={() => {
-            setSubmitted(false)
-            setName('')
-            setEmail('')
-          }}
-          className="font-ui text-xs text-accent hover:underline uppercase tracking-wider pt-2"
+          onClick={() => setSentTo(null)}
+          className="text-link type-sc text-[1.02rem] text-paper"
         >
-          Enviar otro mensaje
+          Send another message
         </button>
-      </motion.div>
+      </div>
     )
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="w-full max-w-xl mx-auto p-8 rounded-lg bg-[#141414]/80 border border-[#252525] space-y-5 backdrop-blur-md shadow-2xl text-left"
-    >
-      <div className="border-b border-[#222222] pb-4 mb-2">
-        <h3 className="font-display italic text-2xl text-text-primary">
-          Escríbeme directamente
-        </h3>
-        <p className="font-body text-xs text-text-tertiary mt-1">
-          Completa el formulario y te responderé a la brevedad.
-        </p>
-      </div>
+    <form onSubmit={handleSubmit} noValidate>
+      <p className="type-body italic text-[1.15rem] text-paper/85 mb-4 text-center">Or send a message</p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <label className="admin-label">Tu Nombre *</label>
+      <div className="border border-paper/15">
+        <div className="grid grid-cols-1 sm:grid-cols-2">
+          <div className={cn(cell, 'border-b sm:border-r')}>
+            <label htmlFor="cf-name" className={label}>Name</label>
+            <input
+              id="cf-name"
+              type="text"
+              autoComplete="name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={input}
+            />
+          </div>
+          <div className={cn(cell, 'border-b')}>
+            <label htmlFor="cf-email" className={label}>Email</label>
+            <input
+              id="cf-email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={input}
+            />
+          </div>
+        </div>
+
+        <div className={cn(cell, 'border-b')}>
+          <label htmlFor="cf-studio" className={label}>
+            Studio / production <span className="type-body italic tracking-normal text-lead/70">optional</span>
+          </label>
           <input
+            id="cf-studio"
             type="text"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Ej: Laura Martínez"
-            className="admin-input"
+            autoComplete="organization"
+            value={studio}
+            onChange={(e) => setStudio(e.target.value)}
+            className={input}
           />
         </div>
 
-        <div className="space-y-1.5">
-          <label className="admin-label">Tu Email *</label>
-          <input
-            type="email"
+        <div className={cell}>
+          <label htmlFor="cf-message" className={label}>Notes</label>
+          <textarea
+            id="cf-message"
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="ejemplo@gmail.com"
-            className="admin-input"
+            rows={5}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Role, project and dates"
+            className={cn(input, 'resize-none leading-relaxed')}
           />
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <label className="admin-label">Mensaje *</label>
-        <textarea
-          required
-          rows={3}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Escribe tu consulta o propuesta..."
-          className="admin-input resize-none"
-        />
-      </div>
-
-      <div className="pt-2 flex justify-end">
-        <Button variant="primary" type="submit" isLoading={loading} className="w-full sm:w-auto gap-2">
-          <Send size={15} />
-          <span>Enviar Consulta</span>
-        </Button>
-      </div>
+      <button type="submit" disabled={loading} className="btn-paper mt-6 disabled:opacity-60">
+        {loading && <Spinner size={15} />}
+        {loading ? 'Sending…' : 'Send message'}
+      </button>
     </form>
   )
 }

@@ -121,7 +121,7 @@ export default function ContactForm({ initialContact }: ContactFormProps) {
               onChange={(e) => setBackgroundType(e.target.value as 'color' | 'image' | 'video')}
               className="admin-input cursor-pointer"
             >
-              <option value="color">Color Sólido Oscuro (#0A0A0A)</option>
+              <option value="color">Negro sólido</option>
               <option value="image">Imagen de Fondo</option>
               <option value="video">Video en Bucle (MP4 / WebM)</option>
             </select>

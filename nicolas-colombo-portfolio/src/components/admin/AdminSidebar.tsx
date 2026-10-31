@@ -3,12 +3,13 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Film, Sparkles, Mail, ExternalLink, LogOut } from 'lucide-react'
+import { LayoutDashboard, Film, Sparkles, Mail, ExternalLink, LogOut, UserRound } from 'lucide-react'
 import { ADMIN_ROUTES } from '@/lib/utils/constants'
 
 const NAV_ITEMS = [
   { label: 'Proyectos', href: ADMIN_ROUTES.DASHBOARD, icon: Film },
   { label: 'Portada / Hero', href: ADMIN_ROUTES.HERO, icon: Sparkles },
+  { label: 'Perfil y reel', href: ADMIN_ROUTES.PROFILE, icon: UserRound },
   { label: 'Contacto & Redes', href: ADMIN_ROUTES.CONTACT, icon: Mail },
   { label: 'Base de Clientes', href: '/admin/clients', icon: LayoutDashboard },
 ]

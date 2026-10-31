@@ -51,8 +51,22 @@ Next.js 15.0.3 (App Router) · React 18 · TypeScript · Tailwind 3.4 · Framer 
 - `src/lib/utils/email.ts`: `sendInquiryNotification` con Resend (from `onboarding@resend.dev`, to nicoandres.colombo@gmail.com)
 - `wrangler.toml`, `open-next.config.ts`: config de Cloudflare
 
-## Diseño
-Fondo `#0A0A0A` · texto `#F5F5F5` / `#999999` · acento `#E8FF59` · surfaces `#141414` / `#1A1A1A` · bordes `#252525`.
+## Diseño (28/10/2026, orientado a conseguir trabajo en estudios)
+Dirección: cine y animación de autor (LAIKA, Ghibli, el Nosferatu de Eggers, que inspiró el logo). Limpio, monocromo, sin adornos de interfaz.
+- Sitio público en **inglés** (el admin sigue en español).
+- Paleta "copia en blanco y negro": fondo `#000` (ink) · texto hueso `#E8E2D6` (paper) · gris cálido `#9A948A` (lead) · panel `#121110` (graphite) · líneas `#2A2825` (rule). Sin color de acento: el único color es el de las animaciones.
+- Tipografía: **Alegreya** (serif caligráfica de pluma ancha, como el logo) + **Alegreya SC** (versalitas reales) para menú, botones, rótulos y créditos. Clases propias en `globals.css`: `.type-display`, `.type-body`, `.type-sc`, `.figures` (no usar `font-*` en el sitio público: chocan con Tailwind).
+- Logo: `public/nicolas-colombo-wordmark.svg` (vector recortado). Favicon: `src/app/icon.svg` (la N del logo).
+- Hero en **letterbox 2:1** (franjas negras arriba y abajo, solo en pantallas apaisadas ≥768px): el menú vive en la franja de arriba, la disponibilidad en la de abajo.
+- Logo con "boil" (3 dibujos de filtro SVG alternados cada 2 cuadros; solo desktop, respeta reduced motion) y entrada "en dos" (CSS `steps()` a 12 fps). No agregar otras animaciones automáticas.
+- About armado como **créditos finales** (centrado, rol en versalitas a la izquierda, dato a la derecha).
+- Contacto: email grande + formulario con forma de encabezado de hoja de exposición (X-sheet), en líneas finas color hueso.
+- Pixel art: los GIF ≤ 400 px se agrandan en múltiplos enteros y sin suavizado (`AnimatedImage.tsx`), dentro de un panel con marcas de encuadre muy tenues (`FieldGuide.tsx`) y un epígrafe con nombre de archivo, tamaño real y escala.
+- `TimingChart.tsx`: carta de timing tenue en el borde inferior del header (home) como progreso de lectura; las secciones son las keys.
+- Se descartó: azul de lápiz, rojo tipo "REC", reglas y textos superpuestos tipo visor de cámara, letra gótica en títulos (compite con el logo).
+- Admin `/admin/profile` (Perfil y reel): rol, disponibilidad, bio, ubicación, herramientas, link al CV y al reel. Campo inexistente = texto por defecto; campo vacío = se oculta.
+- Respaldo del diseño anterior: `_respaldo-diseno-anterior.zip` en esta carpeta.
+- Ojo en desarrollo: si se cambia `tailwind.config.ts` con `npm.cmd run dev` corriendo, hay que reiniciar el servidor para ver los cambios.
 
 ## Cosas a tener en cuenta
 - Supabase (plan free) se pausa tras 7 días sin uso: dashboard → Restore project.
@@ -65,9 +79,9 @@ Fondo `#0A0A0A` · texto `#F5F5F5` / `#999999` · acento `#E8FF59` · surfaces `
 ## Estado al 28/10/2026 (borrar esta sección cuando esté resuelto)
 
 ### Mail del formulario: resuelto el 28/10
-- Funciona con la key nueva de Resend (deploy versión `a4226597`). `email.ts` registra el resultado en `wrangler tail`: `Mail enviado con Resend. ID: …`, `Resend rechazó el envío: …` o `RESEND_API_KEY no configurada…`.
+- Funciona con la key nueva de Resend. `email.ts` registra el resultado en `wrangler tail`: `Mail enviado con Resend. ID: …`, `Resend rechazó el envío: …` o `RESEND_API_KEY no configurada…`.
 - Los mails llegan a **spam** en Gmail porque salen de `onboarding@resend.dev`. Nico debe marcarlos "No es spam" o crear un filtro. La solución de fondo es verificar un dominio propio en Resend.
-- Pendiente de Nico: borrar la key vieja en Resend y actualizar `RESEND_API_KEY` en `.env.local`.
+- Pendiente de Nico: borrar la key vieja en Resend. `.env.local` se modificó el 28/10 y tiene una key válida, pero falta confirmar que es la nueva: si sigue funcionando después de borrar la vieja, lo es.
 - Si el formulario muestra "Respuesta inesperada del servidor" justo después de un deploy, es una página vieja en caché (el ID de la server action cambia en cada build). Se arregla con Ctrl+F5.
 
 ### Rotación de credenciales de Cloudflare
@@ -75,12 +89,16 @@ Fondo `#0A0A0A` · texto `#F5F5F5` / `#999999` · acento `#E8FF59` · surfaces `
 - El 28/10 Nico avisó que borró el token de Cloudflare (se asume que el viejo, **"Edit Cloudflare Workers"**). No hace falta crear otro.
 - **"nicolas-colombo-portfolio build token"** se conserva: parece ser el de Workers Builds. Se puede verificar en Workers & Pages → nicolas-colombo-portfolio → Settings → Build.
 
-### GitHub: al día desde el 28/10
+### GitHub: al día desde el 30/10, con el rediseño incluido
+- `_respaldo-diseno-anterior.zip` y `.claude/` son solo locales (están en `.gitignore`).
 - La raíz git es la carpeta padre (`Pagina web/`), no esta. Las rutas en git empiezan con `nicolas-colombo-portfolio/`.
 - GitHub tiene **push protection**: rechaza pushes con secretos. El 28/10 bloqueó uno porque un commit viejo incluía `.open-next/` con la key de Resend adentro. Se reescribió el historial local antes de subir. `.open-next/`, `.wrangler/` y `.dev.vars` ya están en `.gitignore`.
 
+### Rediseño: publicado el 30/10/2026 (versión `7e502e4d`)
+- En Admin → Perfil y reel: cambiar el rol a "2D Animator", cargar ubicación, herramientas, link al CV y revisar la bio.
+
 ### Siguiente objetivo de Nico
-Subir contenido nuevo a la página desde el panel admin.
+Subir contenido nuevo a la página desde el panel admin (portadas propias en cada proyecto: la miniatura automática de Vimeo es de baja resolución).
 
 ### Ideas que quedaron sugeridas (sin decidir)
 - Tarea programada que consulte Supabase cada pocos días para que no se pause.

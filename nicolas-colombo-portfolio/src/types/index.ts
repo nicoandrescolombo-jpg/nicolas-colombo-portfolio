@@ -36,6 +36,22 @@ export interface ProjectMedia {
 export interface IdentitySettings {
   artist_name: string
   subtitle: string
+  // Campos opcionales (se editan en Admin → Perfil y reel).
+  // Si un campo no existe en la base, el sitio usa un valor por defecto;
+  // si existe pero está vacío, ese bloque se oculta.
+  availability?: string
+  location?: string
+  bio?: string
+  tools?: string
+  cv_url?: string
+  reel_url?: string
+}
+
+/** Video principal que abre el botón "Watch reel" */
+export interface ReelInfo {
+  url: string
+  embedUrl: string
+  title: string
 }
 
 export interface HeroSettings {

@@ -1,73 +1,40 @@
 import React from 'react'
-import { Mail, Linkedin, Globe, Instagram, type LucideIcon } from 'lucide-react'
-import type { ContactSettings } from '@/types'
+import type { ContactSettings, IdentitySettings } from '@/types'
 import PublicContactForm from './PublicContactForm'
+import CopyEmail from './CopyEmail'
+import BackToTop from './BackToTop'
+import { typeset } from '@/lib/utils/helpers'
 
 interface ContactSectionProps {
   settings: ContactSettings
+  identity: IdentitySettings
 }
 
-interface ContactLink {
-  href: string
-  label: string
-  displayText: string
-  Icon: LucideIcon
-  isVisible: boolean
-}
-
-export default function ContactSection({ settings }: ContactSectionProps) {
+export default function ContactSection({ settings, identity }: ContactSectionProps) {
   if (!settings) return null
 
   const year = new Date().getFullYear()
-  const headingText = settings.contact_text || "Let's create something"
-  const targetEmail = settings.email || 'nicoandres.colombo@gmail.com'
+  const headingText = settings.contact_text || "Let's work together"
+  const email = settings.email || null
+  const showEmail = !!(settings.visibility?.email && email)
 
-  const links: ContactLink[] = [
-    {
-      href: `mailto:${targetEmail}`,
-      label: `Email Nicolas Colombo`,
-      displayText: targetEmail,
-      Icon: Mail,
-      isVisible: !!(settings.visibility?.email && targetEmail),
-    },
-    {
-      href: settings.instagram_url ?? '',
-      label: 'Nicolas Colombo on Instagram',
-      displayText: 'Instagram',
-      Icon: Instagram,
-      isVisible: !!(settings.visibility?.instagram && settings.instagram_url),
-    },
-    {
-      href: settings.behance_url ?? '',
-      label: 'Nicolas Colombo on Behance',
-      displayText: 'Behance',
-      Icon: Globe,
-      isVisible: !!(settings.visibility?.behance && settings.behance_url),
-    },
-    {
-      href: settings.linkedin_url ?? '',
-      label: 'Nicolas Colombo on LinkedIn',
-      displayText: 'LinkedIn',
-      Icon: Linkedin,
-      isVisible: !!(settings.visibility?.linkedin && settings.linkedin_url),
-    },
-  ]
-
-  const visibleLinks = links.filter((link) => link.isVisible)
+  const links = [
+    { href: settings.linkedin_url, label: 'LinkedIn', visible: settings.visibility?.linkedin },
+    { href: settings.instagram_url, label: 'Instagram', visible: settings.visibility?.instagram },
+    { href: settings.behance_url, label: 'Behance', visible: settings.visibility?.behance },
+    ...(settings.other_links ?? []).map((l) => ({ href: l.url, label: l.label, visible: l.visible })),
+  ].filter((l): l is { href: string; label: string; visible: boolean } => !!(l.visible && l.href))
 
   const bgType = settings.background_type || 'color'
   const bgUrl = settings.background_url
   const overlayOpacity = settings.background_overlay_opacity ?? 0.5
 
   return (
-    <section
-      id="contact"
-      className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center px-6 py-24 relative overflow-hidden"
-    >
-      {/* ── Background Media Layer (Configurable from Admin) ── */}
+    <section id="contact" className="relative scroll-mt-16 border-t border-rule overflow-hidden">
+      {/* Fondo opcional (configurable en Admin → Contacto) */}
       {bgType === 'video' && bgUrl && (
         <video
-          className="absolute inset-0 w-full h-full object-cover z-0"
+          className="absolute inset-0 w-full h-full object-cover"
           autoPlay
           muted
           loop
@@ -76,78 +43,58 @@ export default function ContactSection({ settings }: ContactSectionProps) {
           aria-hidden="true"
         />
       )}
-
       {bgType === 'image' && bgUrl && (
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat z-0"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${bgUrl})` }}
           aria-hidden="true"
         />
       )}
+      {bgType !== 'color' && bgUrl && (
+        <div
+          className="absolute inset-0 bg-black"
+          style={{ opacity: Math.max(0.55, overlayOpacity) }}
+          aria-hidden="true"
+        />
+      )}
 
-      {/* Dark overlay vignette */}
-      <div
-        className="absolute inset-0 z-0 bg-gradient-to-b from-[#0A0A0A]/90 via-[#0A0A0A]/70 to-[#0A0A0A]/95"
-        style={{
-          opacity: bgType !== 'color' ? overlayOpacity : 1,
-        }}
-        aria-hidden="true"
-      />
+      {/* Cartón final: centrado, como el cierre de una película */}
+      <div className="relative site-container pt-28 sm:pt-36 pb-10">
+        <div className="flex flex-col items-center text-center">
+          <h2 className="type-display text-display-xl text-paper max-w-[16ch]">{typeset(headingText)}</h2>
 
-      {/* Subtle top indicator line */}
-      <div
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-px h-24 bg-gradient-to-b from-transparent to-[#333333] z-10"
-        aria-hidden="true"
-      />
+          {showEmail && (
+            <div className="mt-12 sm:mt-14">
+              <CopyEmail email={email!} />
+            </div>
+          )}
 
-      <div className="max-w-4xl w-full mx-auto flex flex-col items-center text-center gap-12 relative z-10">
-        {/* Editorial heading */}
-        <div>
-          <span className="font-ui text-xs uppercase tracking-[0.25em] text-accent font-medium mb-3 block">
-            Contacto
-          </span>
-          <h2 className="font-display italic text-display-xl text-[#F5F5F5] leading-[0.9] tracking-tight max-w-3xl">
-            {headingText}
-          </h2>
+          {links.length > 0 && (
+            <ul className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-3">
+              {links.map((l) => (
+                <li key={l.label}>
+                  <a
+                    href={l.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-link type-sc text-[1.1rem] text-paper"
+                  >
+                    {l.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        {/* Formulario de Consulta Directo + Guardado en Base de Datos de Clientes */}
-        <PublicContactForm targetEmail={targetEmail} />
+        <div className="mt-20 sm:mt-24 mx-auto w-full max-w-2xl">
+          <PublicContactForm />
+        </div>
 
-        {/* Canales y Redes Sociales */}
-        {visibleLinks.length > 0 && (
-          <nav aria-label="Contact links" className="pt-4">
-            <ul className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-8">
-              {visibleLinks.map((link) => {
-                const isEmail = link.href.startsWith('mailto:')
-                return (
-                  <li key={link.href}>
-                    <a
-                      href={link.href}
-                      aria-label={link.label}
-                      {...(!isEmail
-                        ? { target: '_blank', rel: 'noopener noreferrer' }
-                        : {})}
-                      className="font-ui text-xs uppercase tracking-wider text-[#999999] hover:text-accent flex items-center gap-2 transition-colors duration-200"
-                    >
-                      <link.Icon
-                        size={15}
-                        strokeWidth={1.5}
-                        className="flex-shrink-0"
-                      />
-                      <span>{link.displayText}</span>
-                    </a>
-                  </li>
-                )
-              })}
-            </ul>
-          </nav>
-        )}
-
-        {/* Copyright */}
-        <p className="font-ui text-xs tracking-widest text-[#555555] uppercase pt-8">
-          © {year} Nicolas Colombo
-        </p>
+        <footer className="mt-28 sm:mt-36 pt-6 border-t border-rule flex items-center justify-between gap-6 type-sc text-[0.98rem] text-lead">
+          <p className="figures">© {year} {identity.artist_name}</p>
+          <BackToTop />
+        </footer>
       </div>
     </section>
   )

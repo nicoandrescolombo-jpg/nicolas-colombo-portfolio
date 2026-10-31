@@ -18,7 +18,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   secondary: 'btn-secondary',
   danger: 'btn-danger',
   ghost:
-    'bg-transparent border-none text-[#F5F5F5] hover:text-[#E8FF59] transition-colors duration-200',
+    'bg-transparent border-none text-paper hover:text-accent transition-colors duration-200',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -51,7 +51,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           // Base styles
           'inline-flex items-center justify-center gap-2 rounded font-ui font-medium',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E8FF59] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A0A]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-black',
           'transition-all duration-200 select-none cursor-pointer',
           // Disabled / loading state
           isDisabled && 'opacity-50 cursor-not-allowed pointer-events-none',

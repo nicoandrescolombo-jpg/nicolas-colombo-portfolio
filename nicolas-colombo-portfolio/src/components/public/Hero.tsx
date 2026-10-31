@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils/helpers';
+import { Play } from 'lucide-react';
+import { useReel } from './Reel';
+import { typeset } from '@/lib/utils/helpers';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -15,6 +16,7 @@ interface HeroProps {
   overlayOpacity: number;
   artistName: string;
   subtitle: string;
+  availability: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -27,7 +29,6 @@ function useReducedMotion(): boolean {
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     setReduced(mq.matches);
-
     const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
@@ -49,51 +50,19 @@ function useIsMobile(breakpoint = 768): boolean {
   return isMobile;
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-/** Animated bouncing scroll indicator */
-function ScrollIndicator() {
-  return (
-    <motion.a
-      href="#work"
-      aria-label="Scroll to work section"
-      className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 group"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 1.2, duration: 0.6, ease: 'easeOut' }}
-    >
-      {/* Short vertical line */}
-      <span className="w-px h-6 bg-[#999999]/50 group-hover:bg-[#E8FF59]/60 transition-colors duration-300" />
-
-      {/* Bouncing chevron */}
-      <motion.svg
-        width="16"
-        height="10"
-        viewBox="0 0 16 10"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="text-[#999999] group-hover:text-[#E8FF59] transition-colors duration-300"
-        animate={{ y: [0, 5, 0] }}
-        transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
-      >
-        <path
-          d="M1 1L8 8L15 1"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </motion.svg>
-    </motion.a>
-  );
+function scrollToId(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
+/**
+ * Portada en formato de cine: en pantallas grandes la animación queda
+ * en un cuadro 2:1 con franjas negras arriba y abajo (letterbox).
+ * El menú vive en la franja de arriba y la disponibilidad en la de abajo.
+ */
 export default function Hero({
   videoUrl,
   videoMobileUrl,
@@ -101,24 +70,19 @@ export default function Hero({
   overlayOpacity,
   artistName,
   subtitle,
+  availability,
 }: HeroProps) {
   const reducedMotion = useReducedMotion();
   const isMobile = useIsMobile();
+  const reelCtx = useReel();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoError, setVideoError] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
 
-  // Decide which video source to use
   const activeVideoUrl = isMobile ? (videoMobileUrl ?? videoUrl) : videoUrl;
-
-  // Whether we should show the video at all
-  const showVideo =
-    !reducedMotion && !videoError && !!activeVideoUrl;
-
-  // Clamp overlay opacity between 0 and 1
+  const showVideo = !reducedMotion && !videoError && !!activeVideoUrl;
   const clampedOpacity = Math.min(1, Math.max(0, overlayOpacity));
 
-  // Reload video when source changes (mobile ↔ desktop swap)
   useEffect(() => {
     if (videoRef.current && showVideo) {
       videoRef.current.load();
@@ -126,102 +90,115 @@ export default function Hero({
   }, [activeVideoUrl, showVideo]);
 
   return (
-    <section
-      className="hero-section relative w-full overflow-hidden"
-      style={{ height: '100svh' }}
-      id="home"
-      aria-label="Hero section"
-    >
-      {/* ------------------------------------------------------------------ */}
-      {/* Background layer — fallback image always present as base            */}
-      {/* ------------------------------------------------------------------ */}
-      {fallbackImageUrl && (
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${fallbackImageUrl})` }}
-          aria-hidden="true"
-        />
-      )}
+    <section className="hero-section" id="home" aria-label={`${artistName}, ${subtitle}`}>
+      {/* Filtros de "boil": la línea del logo tiembla como un dibujo repasado a mano */}
+      <svg width="0" height="0" className="absolute" aria-hidden="true" focusable="false">
+        {[3, 11, 23].map((seed, i) => (
+          <filter key={seed} id={`boil-${i + 1}`} x="-2%" y="-10%" width="104%" height="120%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves={2} seed={seed} result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale={2.4} xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        ))}
+      </svg>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Video background                                                     */}
-      {/* ------------------------------------------------------------------ */}
-      {showVideo && (
-        <AnimatePresence>
-          <motion.video
+      {/* Cuadro de la película */}
+      <div className="hero-frame">
+        {fallbackImageUrl && (
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${fallbackImageUrl})` }}
+            aria-hidden="true"
+          />
+        )}
+
+        {showVideo && (
+          <video
             ref={videoRef}
             key={activeVideoUrl ?? 'video'}
-            className="hero-video absolute inset-0 w-full h-full object-cover"
+            className="hero-video transition-opacity duration-700 ease-out"
+            style={{ opacity: videoLoaded ? 1 : 0 }}
             autoPlay
             muted
             loop
             playsInline
+            preload="auto"
             poster={fallbackImageUrl ?? undefined}
             onCanPlay={() => setVideoLoaded(true)}
             onError={() => setVideoError(true)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: videoLoaded ? 1 : 0 }}
-            transition={{ duration: 0.8, ease: 'easeInOut' }}
             aria-hidden="true"
           >
-            <source src={activeVideoUrl!} type="video/mp4" />
-          </motion.video>
-        </AnimatePresence>
-      )}
+            <source src={activeVideoUrl!} />
+          </video>
+        )}
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Dark overlay                                                         */}
-      {/* ------------------------------------------------------------------ */}
-      <div
-        className="hero-overlay absolute inset-0 bg-[#0A0A0A]"
-        style={{ opacity: clampedOpacity }}
-        aria-hidden="true"
-      />
+        {/* Oscurecido general (configurable en Admin → Portada) y viñeta suave */}
+        <div className="absolute inset-0 bg-black" style={{ opacity: clampedOpacity }} aria-hidden="true" />
+        <div
+          className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_50%,rgba(0,0,0,0.35)_100%)]"
+          aria-hidden="true"
+        />
+        {/* Sin franjas (celular o tablet vertical): un degradé abajo para que se lea el texto */}
+        <div
+          className="md:landscape:hidden absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/85 to-transparent"
+          aria-hidden="true"
+        />
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Hero content                                                         */}
-      {/* ------------------------------------------------------------------ */}
-      <div className="hero-content absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="flex flex-col items-center gap-5"
-        >
-          {/* Artist name — SVG logo */}
-          <h1 className="sr-only">{artistName}</h1>
-          <img
-            src="/nicolas-colombo-logo.svg"
-            alt={artistName}
-            className="w-[clamp(260px,55vw,720px)] max-w-full select-none"
-            draggable={false}
-          />
+        <div className="relative z-10 h-full flex flex-col items-center justify-center px-5 text-center">
+          <h1 className="w-[min(82vw,760px)] drop-shadow-[0_2px_28px_rgba(0,0,0,0.55)] draw-on">
+            <span className="sr-only">{artistName}</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/nicolas-colombo-wordmark.svg"
+              alt=""
+              width={4316}
+              height={732}
+              className="w-full h-auto select-none boil"
+              draggable={false}
+            />
+          </h1>
 
-          {/* Thin divider */}
-          <motion.span
-            className="block w-12 h-px bg-[#E8FF59]/60"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 0.7, duration: 0.5, ease: 'easeOut' }}
-            aria-hidden="true"
-          />
+          <div className="mt-5 sm:mt-7 flex flex-col items-center gap-8 on-twos-in [animation-delay:1.05s]">
+            <p className="type-sc text-[1.15rem] sm:text-[1.3rem] text-paper/90">{subtitle}</p>
 
-          {/* Subtitle */}
-          <p
-            className={cn(
-              'font-ui text-sm tracking-[0.3em] uppercase text-[#999999]',
-              'max-w-xs sm:max-w-none',
-            )}
-          >
-            {subtitle}
-          </p>
-        </motion.div>
+            <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-7">
+              {reelCtx ? (
+                <button type="button" onClick={reelCtx.open} className="btn-paper">
+                  <Play size={13} fill="currentColor" strokeWidth={0} aria-hidden="true" />
+                  Watch the reel
+                </button>
+              ) : (
+                <button type="button" onClick={() => scrollToId('work')} className="btn-paper">
+                  See the work
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => scrollToId('contact')}
+                className="text-link type-sc text-[1.05rem] text-paper"
+              >
+                Get in touch
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Scroll indicator                                                     */}
-      {/* ------------------------------------------------------------------ */}
-      {!reducedMotion && <ScrollIndicator />}
+      {/* Franja inferior: disponibilidad y acceso al trabajo */}
+      <div
+        className="absolute inset-x-0 bottom-0 z-10 flex items-center on-twos-in [animation-delay:1.4s]"
+        style={{ height: 'max(var(--bar), 4.5rem)' }}
+      >
+        <div className="site-container flex items-center justify-between gap-6">
+          <p className="type-body italic text-[1.05rem] text-paper/75">{typeset(availability)}</p>
+          <button
+            type="button"
+            onClick={() => scrollToId('work')}
+            className="hidden sm:inline type-sc text-[1rem] text-paper/60 hover:text-paper transition-colors"
+          >
+            Selected work
+          </button>
+        </div>
+      </div>
     </section>
   );
 }

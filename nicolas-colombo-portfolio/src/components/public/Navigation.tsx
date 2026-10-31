@@ -1,323 +1,237 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Play } from 'lucide-react';
 import { cn } from '@/lib/utils/helpers';
+import { useReel } from './Reel';
+import TimingChart from './TimingChart';
 
 interface NavLink {
   label: string;
-  href: string;
   sectionId: string;
 }
 
-// "Work" removed as requested. Only About and Contact remain.
+// "Work" no va en el menú (pedido de Nico): el reel tiene su propio botón.
 const NAV_LINKS: NavLink[] = [
-  { label: 'About',   href: '/#about',   sectionId: 'about'   },
-  { label: 'Contact', href: '/#contact', sectionId: 'contact' },
+  { label: 'About', sectionId: 'about' },
+  { label: 'Contact', sectionId: 'contact' },
 ];
 
-const mobileMenuVariants = {
-  closed: {
-    opacity: 0,
-    clipPath: 'inset(0% 0% 100% 0%)',
-    transition: { duration: 0.45, ease: [0.76, 0, 0.24, 1] as number[] },
-  },
-  open: {
-    opacity: 1,
-    clipPath: 'inset(0% 0% 0% 0%)',
-    transition: { duration: 0.5, ease: [0.76, 0, 0.24, 1] as number[] },
-  },
-};
-
-const mobileNavItemVariants = {
-  closed: { opacity: 0, y: 24 },
-  open: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: 0.15 + i * 0.08, duration: 0.4, ease: 'easeOut' },
-  }),
-};
-
-const hamburgerTopVariants = {
-  closed: { rotate: 0,   y: 0 },
-  open:   { rotate: 45,  y: 6 },
-};
-const hamburgerBottomVariants = {
-  closed: { rotate: 0,    y: 0 },
-  open:   { rotate: -45, y: -6 },
-};
-
 function smoothScrollTo(id: string) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-interface DesktopLinksProps {
-  links: NavLink[];
-  activeSection: string;
-  onNavigate: (sectionId: string) => void;
-}
-
-function DesktopLinks({ links, activeSection, onNavigate }: DesktopLinksProps) {
+/** Logotipo chico: en la home aparece cuando el logo grande del hero sale de pantalla */
+function Wordmark({ visible, onClick }: { visible: boolean; onClick: (e: React.MouseEvent) => void }) {
   return (
-    <nav className="hidden md:flex items-center gap-8" aria-label="Main navigation">
-      {links.map(({ label, href, sectionId }) => {
-        const isActive = activeSection === sectionId;
-
-        return (
-          <a
-            key={sectionId}
-            href={href}
-            onClick={(e) => {
-              e.preventDefault();
-              onNavigate(sectionId);
-            }}
-            className={cn(
-              'font-ui text-sm tracking-wider uppercase transition-colors duration-200 relative group',
-              isActive ? 'text-[#F5F5F5]' : 'text-[#999999] hover:text-[#F5F5F5]',
-            )}
-            aria-current={isActive ? 'page' : undefined}
-          >
-            {label}
-            <span
-              className={cn(
-                'absolute -bottom-0.5 left-0 h-px bg-[#E8FF59]',
-                'transition-all duration-300 ease-out',
-                isActive ? 'w-full' : 'w-0 group-hover:w-full',
-              )}
-              aria-hidden="true"
-            />
-          </a>
-        );
-      })}
-    </nav>
-  );
-}
-
-interface MobileMenuProps {
-  links: NavLink[];
-  activeSection: string;
-  isOpen: boolean;
-  onClose: () => void;
-  onNavigate: (sectionId: string) => void;
-}
-
-function MobileMenu({ links, activeSection, isOpen, onClose, onNavigate }: MobileMenuProps) {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          key="mobile-menu"
-          className="fixed inset-0 z-40 bg-[#0A0A0A] flex flex-col items-center justify-center"
-          variants={mobileMenuVariants}
-          initial="closed"
-          animate="open"
-          exit="closed"
-          aria-modal="true"
-          role="dialog"
-          aria-label="Mobile navigation menu"
-        >
-          <nav className="flex flex-col items-center gap-10">
-            {links.map(({ label, href, sectionId }, i) => {
-              const isActive = activeSection === sectionId;
-              return (
-                <motion.a
-                  key={sectionId}
-                  href={href}
-                  custom={i}
-                  variants={mobileNavItemVariants}
-                  initial="closed"
-                  animate="open"
-                  exit="closed"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onClose();
-                    setTimeout(() => onNavigate(sectionId), 350);
-                  }}
-                  className={cn(
-                    'font-display italic text-[clamp(2.5rem,8vw,4.5rem)] leading-none',
-                    'transition-colors duration-200',
-                    isActive ? 'text-[#F5F5F5]' : 'text-[#555555] hover:text-[#F5F5F5]',
-                  )}
-                  aria-current={isActive ? 'page' : undefined}
-                >
-                  {label}
-                </motion.a>
-              );
-            })}
-          </nav>
-
-          <motion.div
-            className="absolute bottom-10 w-12 h-px bg-[#E8FF59]/40"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            transition={{ delay: 0.4, duration: 0.4, ease: 'easeOut' }}
-            aria-hidden="true"
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-function HamburgerButton({ isOpen, onClick }: { isOpen: boolean; onClick: () => void }) {
-  return (
-    <button
+    <Link
+      href="/"
       onClick={onClick}
-      aria-expanded={isOpen}
-      aria-label={isOpen ? 'Close menu' : 'Open menu'}
-      className="md:hidden relative z-50 flex flex-col justify-center items-center w-8 h-8 gap-0"
+      aria-label="Nicolás Colombo — home"
+      tabIndex={visible ? 0 : -1}
+      className={cn(
+        'relative z-50 block transition-opacity duration-500 ease-out',
+        visible ? 'opacity-100' : 'opacity-0 pointer-events-none',
+      )}
     >
-      <motion.span
-        className="block w-6 h-px bg-[#F5F5F5] origin-center"
-        variants={hamburgerTopVariants}
-        animate={isOpen ? 'open' : 'closed'}
-        transition={{ duration: 0.3, ease: [0.76, 0, 0.24, 1] }}
-        aria-hidden="true"
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/nicolas-colombo-wordmark.svg"
+        alt=""
+        width={4316}
+        height={732}
+        className="h-[22px] sm:h-[26px] w-auto"
+        draggable={false}
       />
-      <motion.span
-        className="block w-6 h-px bg-[#F5F5F5] origin-center mt-1.5"
-        variants={hamburgerBottomVariants}
-        animate={isOpen ? 'open' : 'closed'}
-        transition={{ duration: 0.3, ease: [0.76, 0, 0.24, 1] }}
-        aria-hidden="true"
-      />
-    </button>
+    </Link>
   );
 }
 
 export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
-  const [scrolled, setScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState<string>('home');
-  const observerRef = useRef<IntersectionObserver | null>(null);
-
+  const reelCtx = useReel();
   const isHome = pathname === '/';
 
+  const [scrolled, setScrolled] = useState(false);
+  const [pastHero, setPastHero] = useState(!isHome);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('');
+
+  // Fondo del header y aparición del logotipo
   useEffect(() => {
-    const THRESHOLD = 80;
     const onScroll = () => {
-      setScrolled(window.scrollY > THRESHOLD);
+      setScrolled(window.scrollY > 24);
+      setPastHero(!isHome || window.scrollY > window.innerHeight * 0.55);
     };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [isHome]);
 
+  // Sección activa (subrayado azul)
   useEffect(() => {
     if (!isHome) {
       setActiveSection('');
       return;
     }
-
-    const sectionIds = ['home', ...NAV_LINKS.map((l) => l.sectionId)];
-
-    observerRef.current = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
+          if (entry.isIntersecting) setActiveSection(entry.target.id);
         });
       },
-      {
-        rootMargin: '-40% 0px -55% 0px',
-        threshold: 0,
-      },
+      { rootMargin: '-45% 0px -50% 0px', threshold: 0 },
     );
-
-    sectionIds.forEach((id) => {
+    ['home', 'work', ...NAV_LINKS.map((l) => l.sectionId)].forEach((id) => {
       const el = document.getElementById(id);
-      if (el) observerRef.current?.observe(el);
+      if (el) observer.observe(el);
     });
-
-    return () => observerRef.current?.disconnect();
+    return () => observer.disconnect();
   }, [isHome]);
 
-  const closeMenu = useCallback(() => setMenuOpen(false), []);
-  const toggleMenu = useCallback(() => setMenuOpen((prev) => !prev), []);
+  // Bloquear scroll y cerrar con Escape mientras el menú móvil está abierto
+  useEffect(() => {
+    if (!menuOpen) return;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenuOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
 
   const handleNavigate = useCallback(
     (sectionId: string) => {
-      if (isHome) {
-        smoothScrollTo(sectionId);
-      } else {
-        router.push(`/#${sectionId}`);
-      }
+      if (isHome) smoothScrollTo(sectionId);
+      else router.push(`/#${sectionId}`);
     },
     [isHome, router],
   );
+
+  const openReel = () => {
+    setMenuOpen(false);
+    reelCtx?.open();
+  };
+
+  const solid = scrolled || menuOpen || !isHome;
 
   return (
     <>
       <header
         className={cn(
-          'fixed top-0 left-0 right-0 z-50',
-          'transition-all duration-400 ease-in-out',
-          scrolled || menuOpen || !isHome
-            ? 'bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-white/5'
-            : 'bg-transparent',
+          'fixed top-0 inset-x-0 z-50 transition-colors duration-300',
+          solid ? 'bg-black/90 backdrop-blur-md border-b border-paper/[0.08]' : 'bg-transparent border-b border-transparent',
         )}
       >
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* Logo NC -> Siempre a la página principal */}
-            <Link
-              href="/"
-              onClick={(e) => {
-                if (isHome) {
-                  e.preventDefault();
-                  smoothScrollTo('home');
-                }
-              }}
-              aria-label="Nicolas Colombo — Inicio"
-              className={cn(
-                'relative z-50',
-                'font-ui font-bold text-xl text-[#F5F5F5]',
-                'hover:text-[#E8FF59] transition-colors duration-200',
-              )}
-            >
-              NC
-            </Link>
+        <div className="site-container relative flex items-center justify-between h-16 sm:h-[4.5rem]">
+          <Wordmark
+            visible={pastHero || menuOpen}
+            onClick={(e) => {
+              setMenuOpen(false);
+              if (isHome) {
+                e.preventDefault();
+                smoothScrollTo('home');
+              }
+            }}
+          />
 
-            {/* Desktop links */}
-            <DesktopLinks
-              links={NAV_LINKS}
-              activeSection={activeSection}
-              onNavigate={handleNavigate}
-            />
+          {/* Escritorio */}
+          <nav className="hidden md:flex items-center gap-8" aria-label="Main">
+            {NAV_LINKS.map(({ label, sectionId }) => {
+              const isActive = activeSection === sectionId;
+              return (
+                <a
+                  key={sectionId}
+                  href={`/#${sectionId}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNavigate(sectionId);
+                  }}
+                  aria-current={isActive ? 'true' : undefined}
+                  className={cn(
+                    'type-sc text-[1.02rem] py-1.5 border-b transition-colors duration-200',
+                    isActive
+                      ? 'text-paper border-paper/70'
+                      : 'text-paper/65 border-transparent hover:text-paper',
+                  )}
+                >
+                  {label}
+                </a>
+              );
+            })}
+            {reelCtx && (
+              <button
+                type="button"
+                onClick={openReel}
+                className="inline-flex items-center gap-1.5 py-1.5 type-sc text-[1.02rem] text-paper border-b border-transparent hover:border-paper/70 transition-colors"
+              >
+                <Play size={9} fill="currentColor" strokeWidth={0} aria-hidden="true" />
+                Reel
+              </button>
+            )}
+          </nav>
 
-            {/* Mobile hamburger */}
-            <HamburgerButton isOpen={menuOpen} onClick={toggleMenu} />
-          </div>
+          {/* Móvil */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            className="md:hidden relative z-50 -mr-2 h-10 px-2 type-sc text-[1.02rem] text-paper"
+          >
+            {menuOpen ? 'Close' : 'Menu'}
+          </button>
+
+          {/* Carta de timing: progreso de lectura, con las secciones como keys */}
+          {isHome && <TimingChart visible={pastHero && !menuOpen} onNavigate={handleNavigate} />}
         </div>
       </header>
 
-      {/* Mobile full-screen overlay */}
-      <MobileMenu
-        links={NAV_LINKS}
-        activeSection={activeSection}
-        isOpen={menuOpen}
-        onClose={closeMenu}
-        onNavigate={handleNavigate}
-      />
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            id="mobile-menu"
+            key="mobile-menu"
+            className="fixed inset-0 z-40 bg-black md:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <nav aria-label="Main" className="site-container pt-28 flex flex-col gap-2">
+              {NAV_LINKS.map(({ label, sectionId }) => (
+                <a
+                  key={sectionId}
+                  href={`/#${sectionId}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setMenuOpen(false);
+                    window.setTimeout(() => handleNavigate(sectionId), 220);
+                  }}
+                  className="type-display text-[3.5rem] leading-[1.1] text-paper"
+                >
+                  {label}
+                </a>
+              ))}
+              {reelCtx && (
+                <button type="button" onClick={openReel} className="btn-paper mt-8 self-start">
+                  <Play size={12} fill="currentColor" strokeWidth={0} aria-hidden="true" />
+                  Watch the reel
+                </button>
+              )}
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

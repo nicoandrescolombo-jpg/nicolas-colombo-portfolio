@@ -181,6 +181,7 @@ export async function updateSiteSettings(key: 'hero' | 'contact' | 'identity', v
     revalidatePath('/')
     revalidatePath('/admin')
     revalidatePath(`/admin/${key}`)
+    revalidatePath('/admin/profile')
 
     return { success: true }
   } catch (err: any) {
@@ -201,7 +202,7 @@ export async function submitClientInquiry(data: { name: string; email: string; m
     const supabase = await createClient()
 
     if (!data.name?.trim() || !data.email?.trim() || !data.message?.trim()) {
-      return { success: false, error: 'Por favor completa todos los campos' }
+      return { success: false, error: 'Add your name, email and a message to send it.' }
     }
 
     const trimmedName = data.name.trim()
@@ -219,7 +220,7 @@ export async function submitClientInquiry(data: { name: string; email: string; m
 
     if (dbError) {
       console.error('Supabase clients insert error:', dbError)
-      throw new Error(dbError.message || 'Error al guardar en base de datos')
+      throw new Error('The message could not be saved. Try again, or write to the email shown on the page.')
     }
 
     // 2. Intentar enviar correo — un fallo aquí NO cancela el éxito
@@ -237,6 +238,6 @@ export async function submitClientInquiry(data: { name: string; email: string; m
     return { success: true }
   } catch (err: any) {
     console.error('Error in submitClientInquiry:', err)
-    return { success: false, error: err.message || 'Error al enviar mensaje' }
+    return { success: false, error: err.message || 'The message could not be sent. Try again in a moment.' }
   }
 }

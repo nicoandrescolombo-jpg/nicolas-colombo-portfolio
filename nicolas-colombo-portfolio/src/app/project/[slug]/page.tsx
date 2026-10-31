@@ -3,10 +3,17 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
-import { getProjectBySlug, getPublishedProjects } from '@/lib/queries/projects'
+import { ChevronLeft } from 'lucide-react'
+import { getProjectBySlug, getPublishedProjects, getSiteSettings } from '@/lib/queries/projects'
+import { findReel, projectKind, projectThumbnail } from '@/lib/utils/portfolio'
+import { typeset } from '@/lib/utils/helpers'
 import Navigation from '@/components/public/Navigation'
 import VideoEmbed from '@/components/public/VideoEmbed'
 import GifSequence from '@/components/public/GifSequence'
+import AnimatedImage from '@/components/public/AnimatedImage'
+import { ReelProvider } from '@/components/public/Reel'
+
+export const dynamic = 'force-dynamic'
 
 interface ProjectPageProps {
   params: Promise<{ slug: string }>
@@ -17,20 +24,24 @@ export async function generateMetadata({ params }: ProjectPageProps): Promise<Me
   const project = await getProjectBySlug(slug)
 
   if (!project) {
-    return {
-      title: 'Proyecto no encontrado',
-    }
+    return { title: 'Project not found' }
   }
 
+  const image = projectThumbnail(project)
   return {
-    title: `${project.title} — Nicolas Colombo`,
-    description: project.description || `Obra de animación 2D: ${project.title}`,
+    title: project.title,
+    description: project.description || `${project.title}: 2D animation by Nicolás Colombo.`,
+    ...(image ? { openGraph: { images: [{ url: image }] }, twitter: { images: [image] } } : {}),
   }
 }
 
 export default async function ProjectDetailPage({ params }: ProjectPageProps) {
   const { slug } = await params
-  const project = await getProjectBySlug(slug)
+  const [project, settings, projects] = await Promise.all([
+    getProjectBySlug(slug),
+    getSiteSettings(),
+    getPublishedProjects(),
+  ])
 
   if (!project) {
     notFound()
@@ -38,106 +49,114 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
 
   const isGifSequence = project.project_type === 'gif_sequence'
   const mediaList = project.media || []
+  const reel = findReel(settings.identity, projects)
+  const kind = projectKind(project)
+
+  // Siguiente proyecto (vuelve al primero al llegar al final)
+  const index = projects.findIndex((p) => p.slug === project.slug)
+  const next = projects.length > 1 ? projects[(index + 1) % projects.length] : null
 
   return (
-    <div className="min-h-screen bg-bg-primary text-text-primary">
+    <ReelProvider reel={reel}>
       <Navigation />
 
-      <main className="pt-32 pb-24 px-6 lg:px-16 max-w-5xl mx-auto">
-        {/* Back Link */}
-        <div className="mb-10">
+      <main className="pt-28 sm:pt-36 pb-10">
+        <div className="site-container">
           <Link
             href="/#work"
-            className="inline-flex items-center gap-2 font-ui text-xs uppercase tracking-widest text-text-secondary hover:text-accent transition-colors"
+            className="inline-flex items-center gap-1 -ml-1 type-sc text-[1.02rem] text-lead hover:text-paper transition-colors"
           >
-            ← Volver a la galería
+            <ChevronLeft size={16} strokeWidth={1.5} aria-hidden="true" />
+            All work
           </Link>
-        </div>
 
-        {/* Project Header */}
-        <header className="mb-14">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="font-ui text-xs uppercase tracking-widest text-accent font-medium">
-              {isGifSequence ? 'Secuencia de Movimiento' : 'Pieza Individual'}
-            </span>
-          </div>
+          <header className="mt-8 sm:mt-10 mb-12 sm:mb-16 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-end">
+            <div className="lg:col-span-7">
+              <h1 className="type-display text-display-xl text-paper">{typeset(project.title)}</h1>
+              {kind && <p className="mt-3 type-sc text-[1.1rem] text-lead">{kind}</p>}
+            </div>
+            {project.description && (
+              <p className="lg:col-span-5 type-body text-[1.2rem] leading-relaxed text-paper/85 max-w-[52ch] whitespace-pre-line">
+                {typeset(project.description)}
+              </p>
+            )}
+          </header>
 
-          <h1 className="font-display italic text-4xl sm:text-5xl lg:text-6xl text-text-primary">
-            {project.title}
-          </h1>
-
-          {project.description && (
-            <p className="mt-6 font-body text-base sm:text-lg text-text-secondary max-w-2xl leading-relaxed">
-              {project.description}
-            </p>
-          )}
-        </header>
-
-        {/* Content Showcase */}
-        <section className="mt-12">
-          {isGifSequence ? (
-            <GifSequence project={project} />
-          ) : (
-            <div className="space-y-12">
-              {mediaList.map((item) => {
-                if (item.media_type === 'youtube' || item.media_type === 'vimeo') {
-                  return (
-                    <div key={item.id} className="rounded-lg overflow-hidden border border-[#252525]">
+          <section>
+            {isGifSequence ? (
+              <GifSequence project={project} />
+            ) : (
+              <div className="flex flex-col gap-6 sm:gap-8">
+                {mediaList.map((item, i) => {
+                  if (item.media_type === 'youtube' || item.media_type === 'vimeo') {
+                    return (
                       <VideoEmbed
+                        key={item.id}
                         url={item.external_url || ''}
                         mediaType={item.media_type}
                         title={project.title}
+                        posterUrl={i === 0 ? project.cover_url : null}
                       />
-                    </div>
-                  )
-                }
+                    )
+                  }
 
-                if (item.media_type === 'image' || item.media_type === 'gif') {
                   const src = item.storage_path || item.external_url
                   if (!src) return null
 
+                  if (item.media_type === 'gif') {
+                    return (
+                      <AnimatedImage
+                        key={item.id}
+                        src={src}
+                        alt={item.alt_text || project.title}
+                        variant="frame"
+                        padding={0.06}
+                        priority={i === 0}
+                      />
+                    )
+                  }
+
                   return (
-                    <div
-                      key={item.id}
-                      className={`relative w-full overflow-hidden ${
-                        item.media_type === 'gif' ? 'bg-transparent' : 'rounded-lg bg-[#141414] border border-[#252525]'
-                      }`}
-                    >
+                    <figure key={item.id} className="bg-graphite">
                       <Image
                         src={src}
                         alt={item.alt_text || project.title}
                         width={item.width || 1920}
                         height={item.height || 1080}
-                        unoptimized={item.media_type === 'gif'}
-                        className="w-full h-auto object-contain"
-                        priority
+                        sizes="(max-width: 1440px) 100vw, 1344px"
+                        className="w-full h-auto"
+                        priority={i === 0}
                       />
-                    </div>
+                    </figure>
                   )
-                }
+                })}
+              </div>
+            )}
+          </section>
 
-                return null
-              })}
+          <footer className="mt-24 sm:mt-32 pt-8 border-t border-rule grid grid-cols-1 sm:grid-cols-2 gap-10">
+            {next && next.slug !== project.slug ? (
+              <Link href={`/project/${next.slug}`} className="group block">
+                <span className="block type-sc text-[1.02rem] text-lead">Next project</span>
+                <span className="mt-1 block type-display text-display-md text-paper decoration-paper/60 decoration-1 underline-offset-[8px] group-hover:underline">
+                  {next.title}
+                </span>
+              </Link>
+            ) : (
+              <span />
+            )}
+            <div className="sm:text-right">
+              <span className="block type-sc text-[1.02rem] text-lead">Contact</span>
+              <Link
+                href="/#contact"
+                className="mt-1 inline-block type-display text-display-md text-paper decoration-paper/60 decoration-1 underline-offset-[8px] hover:underline"
+              >
+                Get in touch
+              </Link>
             </div>
-          )}
-        </section>
-
-        {/* Bottom Navigation */}
-        <footer className="mt-24 pt-12 border-t border-[#252525] flex justify-between items-center">
-          <Link
-            href="/#work"
-            className="font-ui text-xs uppercase tracking-widest text-text-secondary hover:text-accent transition-colors"
-          >
-            ← Volver a proyectos
-          </Link>
-          <Link
-            href="/#contact"
-            className="font-ui text-xs uppercase tracking-widest text-accent hover:underline"
-          >
-            Contactar al artista →
-          </Link>
-        </footer>
+          </footer>
+        </div>
       </main>
-    </div>
+    </ReelProvider>
   )
 }

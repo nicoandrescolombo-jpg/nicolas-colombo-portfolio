@@ -12,6 +12,10 @@ out/
 .wrangler/
 .dev.vars
 
+# Local only
+.claude/
+_respaldo-*.zip
+
 # Production
 dist/
 build/

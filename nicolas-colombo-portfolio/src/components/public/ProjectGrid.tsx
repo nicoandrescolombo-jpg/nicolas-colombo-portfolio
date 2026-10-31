@@ -1,56 +1,71 @@
 import React from 'react'
 import type { Project } from '@/types'
-import ProjectCard from './ProjectCard'
+import ProjectCard, { type CardSize } from './ProjectCard'
 
 interface ProjectGridProps {
   projects: Project[]
 }
 
+/**
+ * Arma las filas de la grilla con un patrón que se repite:
+ *   [ancho + angosto] → [angosto + ancho] → [completo]
+ * Cada fila tiene siempre una pieza ancha o completa que define la altura,
+ * así las piezas angostas se estiran a la misma altura sin huecos.
+ * Si la última fila queda incompleta, esa pieza pasa a ocupar todo el ancho.
+ */
+const ROW_PATTERNS: CardSize[][] = [
+  ['wide', 'narrow'],
+  ['narrow', 'wide'],
+  ['full'],
+]
+
+function buildRows(projects: Project[]) {
+  const rows: { project: Project; size: CardSize }[][] = []
+  let i = 0
+  let p = 0
+  while (i < projects.length) {
+    const pattern = ROW_PATTERNS[p % ROW_PATTERNS.length]
+    const remaining = projects.length - i
+    if (remaining < pattern.length) {
+      projects.slice(i).forEach((project) => rows.push([{ project, size: 'full' }]))
+      break
+    }
+    rows.push(pattern.map((size, k) => ({ project: projects[i + k], size })))
+    i += pattern.length
+    p++
+  }
+  return rows
+}
+
+const SPAN: Record<CardSize, string> = {
+  wide: 'md:col-span-2',
+  narrow: 'md:col-span-1',
+  full: 'md:col-span-3',
+}
+
 export default function ProjectGrid({ projects }: ProjectGridProps) {
-  if (!projects || projects.length === 0) {
-    return (
-      <section id="work" className="py-28 px-6 lg:px-16 max-w-7xl mx-auto text-center">
-        <p className="font-display italic text-2xl text-text-secondary">
-          Nuevas obras y secuencias en desarrollo.
-        </p>
-      </section>
-    )
-  }
-
-  // Asymmetric grid layout spans repeating cycle:
-  // 0: 2 cols, 1: 1 col, 2: 1 col, 3: 2 cols, 4: full (3 cols)
-  const getColSpan = (index: number) => {
-    const mod = index % 5
-    if (mod === 0) return 'md:col-span-2'
-    if (mod === 1) return 'md:col-span-1'
-    if (mod === 2) return 'md:col-span-1'
-    if (mod === 3) return 'md:col-span-2'
-    if (mod === 4) return 'md:col-span-3'
-    return 'md:col-span-1'
-  }
-
   return (
-    <section id="work" className="py-28 px-6 lg:px-16 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 pb-6 border-b border-[#252525]">
-        <div>
-          <span className="font-ui text-xs uppercase tracking-[0.25em] text-accent font-medium">
-            Selección
-          </span>
-          <h2 className="font-display text-4xl lg:text-5xl text-text-primary mt-2">
-            Trabajos & Estudios
-          </h2>
-        </div>
-        <p className="mt-4 md:mt-0 font-ui text-xs text-text-tertiary uppercase tracking-widest">
-          {projects.length} {projects.length === 1 ? 'Proyecto' : 'Proyectos'}
-        </p>
-      </div>
+    <section id="work" className="scroll-mt-16 py-24 sm:py-32">
+      <div className="site-container">
+        <h2 className="type-display text-display-lg text-paper mb-10 sm:mb-14">Selected work</h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-        {projects.map((project, index) => (
-          <div key={project.id} className={getColSpan(index)}>
-            <ProjectCard project={project} priority={index < 2} />
+        {!projects || projects.length === 0 ? (
+          <p className="type-body text-lead max-w-[56ch]">
+            New work is being added. Get in touch if you&apos;d like to see more.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-14 sm:gap-20">
+            {buildRows(projects).map((row, r) => (
+              <div key={r} className="grid grid-cols-1 md:grid-cols-3 gap-x-6 lg:gap-x-8 gap-y-14">
+                {row.map(({ project, size }, k) => (
+                  <div key={project.id} className={SPAN[size]}>
+                    <ProjectCard project={project} size={size} priority={r === 0 && k < 2} />
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </section>
   )
