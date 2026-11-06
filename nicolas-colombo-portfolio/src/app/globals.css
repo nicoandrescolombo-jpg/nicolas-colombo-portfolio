@@ -248,9 +248,17 @@
     100% { filter: url(#boil-1); }
   }
 
-  /* El logo se escribe de izquierda a derecha en 10 dibujos */
+  /* El logo se escribe de izquierda a derecha en 10 dibujos.
+     Sin relleno final: al terminar no queda ningún clip-path aplicado. */
   .draw-on {
-    animation: draw-on 0.84s steps(10, end) 0.25s both;
+    animation: draw-on 0.84s steps(10, end) 0.25s backwards;
+  }
+
+  /* En celular aparece sin recorte: Safari en iPhone dejaba cortado el final del logo */
+  @media (max-width: 767px) {
+    .draw-on {
+      animation: on-twos-in 0.34s steps(4, end) 0.25s both;
+    }
   }
 
   .on-twos-in {
