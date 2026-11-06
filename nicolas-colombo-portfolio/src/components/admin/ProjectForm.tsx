@@ -39,6 +39,7 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
   const [coverUrl, setCoverUrl] = useState(initialProject?.cover_url || '')
   const [body, setBody] = useState(initialProject?.body || '')
   const [linkUrl, setLinkUrl] = useState(initialProject?.link_url || '')
+  const [sortOrder, setSortOrder] = useState(initialProject?.sort_order ?? 0)
 
   // Media items list
   const [mediaList, setMediaList] = useState<ProjectMedia[]>(initialProject?.media || [])
@@ -71,7 +72,7 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
           project_type: projectType,
           status,
           cover_url: coverUrl,
-          sort_order: initialProject.sort_order,
+          sort_order: sortOrder,
           body,
           link_url: linkUrl,
         })
@@ -86,7 +87,7 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
           project_type: projectType,
           status,
           cover_url: coverUrl,
-          sort_order: 0,
+          sort_order: sortOrder,
         })
 
         if (!res.success) throw new Error(res.error)
@@ -319,6 +320,14 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
                 <option value="draft">Borrador (Oculto al público)</option>
                 <option value="published">Publicado (Visible en el portafolio)</option>
               </select>
+              <label className="admin-label pt-2 block">Posición en la home (1 = primero, en el lugar grande)</label>
+              <input
+                type="number"
+                min={0}
+                value={sortOrder}
+                onChange={(e) => setSortOrder(Number(e.target.value) || 0)}
+                className="admin-input w-28"
+              />
             </div>
 
             <div className="space-y-2">

@@ -65,6 +65,7 @@ export async function getPublishedProjects(): Promise<Project[]> {
       `)
       .eq('status', 'published')
       .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true })
 
     if (error || !projects) {
       console.warn('Error fetching projects from Supabase:', error?.message)
@@ -138,6 +139,7 @@ export async function getAllProjectsForAdmin(): Promise<Project[]> {
         media:project_media(*)
       `)
       .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true })
 
     if (error || !projects) {
       return MOCK_PROJECTS
