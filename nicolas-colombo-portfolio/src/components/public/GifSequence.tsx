@@ -1,6 +1,7 @@
 import React from 'react'
 import type { Project } from '@/types'
 import AnimatedImage from './AnimatedImage'
+import { LightboxTrigger } from './Lightbox'
 
 interface GifSequenceProps {
   project: Project
@@ -17,13 +18,15 @@ export default function GifSequence({ project }: GifSequenceProps) {
 
         return (
           <figure key={item.id || index}>
-            <AnimatedImage
-              src={src}
-              alt={item.alt_text || `${project.title}, loop ${index + 1}`}
-              variant="frame"
-              padding={0.06}
-              priority={index === 0}
-            />
+            <LightboxTrigger id={item.id} label={item.alt_text || `${project.title}, loop ${index + 1}`}>
+              <AnimatedImage
+                src={src}
+                alt={item.alt_text || `${project.title}, loop ${index + 1}`}
+                variant="frame"
+                padding={0.06}
+                priority={index === 0}
+              />
+            </LightboxTrigger>
             {item.alt_text && (
               <figcaption className="mt-1 type-body text-paper/85">{item.alt_text}</figcaption>
             )}

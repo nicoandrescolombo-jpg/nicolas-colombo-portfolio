@@ -10,7 +10,8 @@ import { findReel, mediaSrc, projectKind, projectThumbnail } from '@/lib/utils/p
 import { cn, typeset } from '@/lib/utils/helpers'
 import Navigation from '@/components/public/Navigation'
 import GifSequence from '@/components/public/GifSequence'
-import MediaItem, { isVisual } from '@/components/public/MediaItem'
+import MediaItem, { isVisual, toLightboxItem } from '@/components/public/MediaItem'
+import { LightboxProvider, type LightboxItem } from '@/components/public/Lightbox'
 import ProcessDissolve from '@/components/public/ProcessDissolve'
 import SketchPair from '@/components/public/SketchPair'
 import { ReelProvider } from '@/components/public/Reel'
@@ -127,6 +128,16 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
 
   const mediaList = project.media || []
   const blocks = buildBlocks(mediaList)
+  // Piezas del visor, en el orden en que aparecen en la página
+  const ordered: ProjectMedia[] =
+    project.project_type === 'gif_sequence'
+      ? mediaList
+      : blocks.flatMap((b) =>
+          b.kind === 'media' ? [b.item] : b.kind === 'dissolve' ? [b.final, b.sketch] : [b.sketch, b.final],
+        )
+  const lightboxItems = ordered
+    .map((m) => toLightboxItem(m, project.title))
+    .filter((x): x is LightboxItem => !!x)
   const reel = findReel(settings.identity, projects)
   const kind = projectKind(project)
   const link = project.link_url?.trim()
@@ -182,6 +193,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
             </div>
           </header>
 
+          <LightboxProvider items={lightboxItems}>
           <section aria-label="Work">
             {project.project_type === 'gif_sequence' ? (
               <GifSequence project={project} />
@@ -193,8 +205,8 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
                       <div key={b.sketch.id} className="md:col-span-2 my-8 sm:my-16">
                         <ProcessDissolve
                           title={project.title}
-                          final={{ src: mediaSrc(b.final)!, width: b.final.width, height: b.final.height }}
-                          sketch={{ src: mediaSrc(b.sketch)!, width: b.sketch.width, height: b.sketch.height }}
+                          final={{ id: b.final.id, src: mediaSrc(b.final)!, width: b.final.width, height: b.final.height }}
+                          sketch={{ id: b.sketch.id, src: mediaSrc(b.sketch)!, width: b.sketch.width, height: b.sketch.height }}
                         />
                         {b.sketch.caption && (
                           <p className="type-body italic text-[0.98rem] text-lead max-w-[60ch]">{b.sketch.caption}</p>
@@ -228,6 +240,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
               </div>
             )}
           </section>
+          </LightboxProvider>
 
           {paragraphs.length > 0 && (
             <section aria-label="About the project" className="mt-24 sm:mt-32">

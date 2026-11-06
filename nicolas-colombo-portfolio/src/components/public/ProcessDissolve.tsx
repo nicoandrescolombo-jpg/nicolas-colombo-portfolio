@@ -2,6 +2,7 @@
 
 import React, { useRef } from 'react'
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
+import { LightboxTrigger, useLightbox } from './Lightbox'
 
 /**
  * Pasaje del resultado final al proceso: un fundido encadenado, como en una
@@ -18,6 +19,8 @@ interface Frame {
   src: string
   width?: number | null
   height?: number | null
+  /** id de la pieza, para abrirla en el visor */
+  id?: string
 }
 
 export default function ProcessDissolve({
@@ -31,6 +34,7 @@ export default function ProcessDissolve({
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const reduce = useReducedMotion()
+  const lightbox = useLightbox()
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
 
   // Quieto al entrar, funde en el tramo del medio, quieto al salir
@@ -50,8 +54,10 @@ export default function ProcessDissolve({
           { f: sketch, label: 'First sketch' },
         ].map(({ f, label }) => (
           <figure key={label}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={f.src} alt={`${title}, ${label.toLowerCase()}`} className="w-full h-auto bg-graphite" />
+            <LightboxTrigger id={f.id || ''} label={`${title}, ${label.toLowerCase()}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={f.src} alt={`${title}, ${label.toLowerCase()}`} className="w-full h-auto bg-graphite" />
+            </LightboxTrigger>
             <figcaption className="mt-2 type-sc text-[1rem] text-lead">{label}</figcaption>
           </figure>
         ))}
@@ -62,7 +68,15 @@ export default function ProcessDissolve({
   return (
     <div ref={ref} className="relative h-[230vh]">
       <div className="sticky top-0 h-screen flex flex-col justify-center py-[10vh]">
-        <div className="relative mx-auto w-full max-h-full" style={{ aspectRatio: ratio, maxWidth: `calc(76vh * ${ratio})` }}>
+        <div
+          className={`relative mx-auto w-full max-h-full ${lightbox ? 'cursor-zoom-in' : ''}`}
+          style={{ aspectRatio: ratio, maxWidth: `calc(76vh * ${ratio})` }}
+          onClick={() => {
+            // Abre el cuadro que más se ve en ese momento del fundido
+            const id = stepped.get() >= 0.5 ? sketch.id : final.id
+            if (lightbox && id) lightbox.open(id)
+          }}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={final.src}

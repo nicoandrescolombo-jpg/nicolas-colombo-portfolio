@@ -6,6 +6,22 @@ import { cn } from '@/lib/utils/helpers'
 import VideoEmbed from './VideoEmbed'
 import AnimatedImage from './AnimatedImage'
 import LoopVideo from './LoopVideo'
+import { LightboxTrigger, type LightboxItem } from './Lightbox'
+
+/** Datos de una pieza para el visor a pantalla completa (null si no se puede ampliar) */
+export function toLightboxItem(item: ProjectMedia, title: string): LightboxItem | null {
+  const src = mediaSrc(item)
+  if (!src || item.media_type === 'youtube' || item.media_type === 'vimeo') return null
+  return {
+    id: item.id,
+    src,
+    type: item.media_type === 'gif' ? 'gif' : item.media_type === 'image' ? 'image' : 'video',
+    width: item.width,
+    height: item.height,
+    alt: item.alt_text || title,
+    caption: item.caption,
+  }
+}
 
 interface Props {
   item: ProjectMedia
@@ -70,9 +86,17 @@ export default function MediaItem({
     )
   }
 
+  const isEmbed = item.media_type === 'youtube' || item.media_type === 'vimeo'
+
   return (
     <figure className={className}>
-      {body}
+      {isEmbed ? (
+        body
+      ) : (
+        <LightboxTrigger id={item.id} label={alt}>
+          {body}
+        </LightboxTrigger>
+      )}
       {caption && (
         <figcaption className="mt-3 type-body italic text-[0.98rem] leading-snug text-lead max-w-[60ch]">
           {caption}

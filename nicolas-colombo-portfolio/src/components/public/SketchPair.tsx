@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import type { ProjectMedia } from '@/types'
 import { mediaSrc } from '@/lib/utils/portfolio'
 import LoopVideo from './LoopVideo'
+import { LightboxTrigger } from './Lightbox'
 
 /**
  * Un boceto con la pieza final que salió de él, en el mismo cuadro.
@@ -48,10 +49,12 @@ export default function SketchPair({
 
   return (
     <figure>
-      <div className={`relative w-full ${panel} overflow-hidden`} style={{ aspectRatio: ratio }}>
-        {layer(sketch, sketchSrc, !showFinal, 'sketch')}
-        {layer(final, finalSrc, showFinal, 'final')}
-      </div>
+      <LightboxTrigger id={showFinal ? final.id : sketch.id} label={`${title}, ${showFinal ? 'final' : 'sketch'}`}>
+        <div className={`relative w-full ${panel} overflow-hidden`} style={{ aspectRatio: ratio }}>
+          {layer(sketch, sketchSrc, !showFinal, 'sketch')}
+          {layer(final, finalSrc, showFinal, 'final')}
+        </div>
+      </LightboxTrigger>
       <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <button
           type="button"
