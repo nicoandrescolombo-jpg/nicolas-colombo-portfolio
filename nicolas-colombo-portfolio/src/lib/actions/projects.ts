@@ -72,7 +72,7 @@ export async function updateProject(id: string, formData: Partial<ProjectFormDat
       .update(updatePayload)
       .eq('id', id)
 
-    if (error) throw error
+    if (error) throw new Error(explainDbError(error.message))
 
     revalidatePath('/')
     revalidatePath('/admin')
@@ -134,6 +134,7 @@ export async function addProjectMedia(projectId: string, mediaData: MediaFormDat
         ...(mediaData.section ? { section: mediaData.section } : {}),
         ...(mediaData.caption ? { caption: mediaData.caption } : {}),
         ...(mediaData.pair_id ? { pair_id: mediaData.pair_id } : {}),
+        ...(mediaData.preview ? { preview: true } : {}),
       })
       .select('id')
       .single()
@@ -156,7 +157,7 @@ export async function addProjectMedia(projectId: string, mediaData: MediaFormDat
 export async function updateProjectMedia(
   mediaId: string,
   projectId: string,
-  patch: Partial<Pick<MediaFormData, 'section' | 'caption' | 'alt_text' | 'pair_id' | 'sort_order'>>,
+  patch: Partial<Pick<MediaFormData, 'section' | 'caption' | 'alt_text' | 'pair_id' | 'sort_order' | 'preview'>>,
 ): Promise<ActionResult> {
   try {
     const supabase = await checkAuth()
@@ -166,6 +167,7 @@ export async function updateProjectMedia(
     if (patch.alt_text !== undefined) payload.alt_text = patch.alt_text || null
     if (patch.pair_id !== undefined) payload.pair_id = patch.pair_id || null
     if (patch.sort_order !== undefined) payload.sort_order = patch.sort_order
+    if (patch.preview !== undefined) payload.preview = patch.preview
 
     const { error } = await supabase.from('project_media').update(payload).eq('id', mediaId)
     if (error) throw new Error(explainDbError(error.message))
@@ -183,6 +185,9 @@ export async function updateProjectMedia(
 function explainDbError(message: string): string {
   if (/media_type_check/.test(message)) {
     return 'La base no acepta clips de video todavía: falta correr supabase/migrations/004_project_process.sql.'
+  }
+  if (/column .*(preview|link_url)/i.test(message)) {
+    return 'Falta correr supabase/migrations/005_preview_and_link.sql en Supabase.'
   }
   if (/column .*(section|caption|pair_id|body|client|role|year)/i.test(message)) {
     return 'Falta correr supabase/migrations/004_project_process.sql en Supabase.'

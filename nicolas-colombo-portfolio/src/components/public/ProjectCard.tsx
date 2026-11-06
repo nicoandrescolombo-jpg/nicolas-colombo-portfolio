@@ -7,6 +7,7 @@ import type { Project, ProjectMedia } from '@/types'
 import { cn, getVideoEmbedUrl, typeset } from '@/lib/utils/helpers'
 import { mediaSrc, projectKind, projectThumbnail } from '@/lib/utils/portfolio'
 import AnimatedImage from './AnimatedImage'
+import CardPreview from './CardPreview'
 
 export type CardSize = 'wide' | 'narrow' | 'full'
 
@@ -27,26 +28,29 @@ export default function ProjectCard({ project, size, priority = false }: Project
   const videoMedia = media.find(isVideo)
   const gifMedia = media.find((m) => m.media_type === 'gif')
   const stills = media.filter((m) => m.media_type === 'image')
+  // Piezas elegidas para la vista previa (Admin → "Vista previa en la home")
+  const previewItems = media.filter((m) => m.preview && mediaSrc(m))
 
   // Solo hay vista previa con mouse (en celulares el toque abre el proyecto)
   useEffect(() => {
     setCanHover(window.matchMedia('(hover: hover) and (pointer: fine)').matches)
   }, [])
 
-  const showVideoPreview = canHover && isHovered && !!videoMedia?.external_url
+  const showPickedPreview = canHover && isHovered && previewItems.length > 0
+  const showVideoPreview = canHover && isHovered && !showPickedPreview && !!videoMedia?.external_url
   const videoPreviewUrl = videoMedia?.external_url
     ? getVideoEmbedUrl(videoMedia.external_url, { autoplay: true, muted: true, background: true })
     : null
 
   // Varias imágenes fijas: se pasan solas mientras el mouse está encima
   useEffect(() => {
-    if (!(canHover && isHovered && stills.length > 1 && !videoMedia)) {
+    if (!(canHover && isHovered && stills.length > 1 && !videoMedia && previewItems.length === 0)) {
       setSlide(0)
       return
     }
     const id = window.setInterval(() => setSlide((s) => (s + 1) % stills.length), 1100)
     return () => window.clearInterval(id)
-  }, [canHover, isHovered, stills.length, videoMedia])
+  }, [canHover, isHovered, stills.length, videoMedia, previewItems.length])
 
   const cover = project.cover_url
   const gifSrc = mediaSrc(gifMedia)
@@ -94,6 +98,8 @@ export default function ProjectCard({ project, size, priority = false }: Project
             <span className="type-display text-3xl text-lead">{project.title}</span>
           </div>
         )}
+
+        {showPickedPreview && <CardPreview items={previewItems} />}
 
         {/* Vista previa en vivo del video al pasar el mouse */}
         {showVideoPreview && videoPreviewUrl && (

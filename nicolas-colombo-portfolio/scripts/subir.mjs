@@ -154,15 +154,17 @@ function draftManifest(dir) {
     slug: slugify(title),
     estado: 'draft',
     descripcion: '',
-    cliente: '',
-    rol: '',
-    año: '',
+    link: '',
     portada: finals.find((f) => mediaType(f) === 'image') || finals[0] || '',
-    final: finals.map((f) => ({ archivo: f, epigrafe: '' })),
-    proceso: process_.map((f) => {
-      const pair = finalBase.get(base(f))
-      return { archivo: f, epigrafe: '', ...(pair ? { boceto_de: pair } : {}) }
-    }),
+    // En el orden de la página. "boceto_de": el final que se muestra junto a
+    // ese boceto (y no se repite). "vista_previa": se reproduce en la home.
+    piezas: [
+      ...finals.map((f) => ({ archivo: f, epigrafe: '' })),
+      ...process_.map((f) => {
+        const pair = finalBase.get(base(f))
+        return { archivo: f, epigrafe: '', ...(pair ? { boceto_de: pair } : {}) }
+      }),
+    ],
   }
 }
 
@@ -178,7 +180,7 @@ async function main() {
     const draft = draftManifest(dir)
     fs.writeFileSync(manifestPath, JSON.stringify(draft, null, 2) + '\n', 'utf8')
     console.log(`\nArmé ${manifestPath}`)
-    console.log(`  ${draft.final.length} en Resultado final, ${draft.proceso.length} en Proceso.`)
+    console.log(`  ${draft.piezas.length} piezas.`)
     console.log('Revisalo (título, orden, epígrafes, qué boceto va con qué final) y volvé a correr el mismo comando.')
     console.log('Si querés un texto largo sobre el proyecto, ponelo en texto.md en la misma carpeta.\n')
     return
@@ -201,10 +203,18 @@ async function main() {
     .filter((p) => p && !/^BORRADOR/i.test(p) && !/^\[[\s\S]*\]$/.test(p))
     .join('\n\n')
 
-  const items = [
-    ...(m.final || []).map((it) => ({ ...it, section: 'final' })),
-    ...(m.proceso || []).map((it) => ({ ...it, section: 'process' })),
-  ]
+  // "piezas": lista única en el orden de la página. (Se siguen aceptando las
+  // listas viejas "final" y "proceso".) Lo que es boceto va como proceso.
+  const items = m.piezas
+    ? m.piezas.map((it) => ({
+        ...it,
+        section: it.seccion === 'proceso' || it.boceto_de || PROCESS_WORDS.test(it.archivo || '') ? 'process' : 'final',
+      }))
+    : [
+        ...(m.final || []).map((it) => ({ ...it, section: 'final' })),
+        ...(m.proceso || []).map((it) => ({ ...it, section: 'process' })),
+      ]
+  const cleanUp = process.argv.includes('--limpiar')
   for (const it of items) {
     const p = path.join(dir, it.archivo || '')
     if (!it.archivo || !fs.existsSync(p)) fail(`No encuentro el archivo "${it.archivo}" en la carpeta.`)
@@ -235,6 +245,10 @@ async function main() {
   if (probe.error) {
     fail('Falta correr supabase/migrations/004_project_process.sql en Supabase → SQL Editor.')
   }
+  const probe5 = await supabase.from('project_media').select('id, preview').limit(1)
+  if (probe5.error) {
+    fail('Falta correr supabase/migrations/005_preview_and_link.sql en Supabase → SQL Editor.')
+  }
 
   // Proyecto: crear o actualizar por slug
   const fields = {
@@ -242,9 +256,7 @@ async function main() {
     slug,
     description: m.descripcion || null,
     body: body || null,
-    client: m.cliente || null,
-    role: m.rol || null,
-    year: m.año || m.anio || null,
+    link_url: m.link || null,
     project_type: m.tipo === 'gif_sequence' ? 'gif_sequence' : 'individual',
     status: m.estado === 'published' ? 'published' : 'draft',
   }
@@ -290,6 +302,7 @@ async function main() {
       caption: it.epigrafe || null,
       alt_text: it.alt || prettyName(file),
       sort_order: order++,
+      preview: !!it.vista_previa,
     }
 
     if (row) {
@@ -355,8 +368,21 @@ async function main() {
   if (cover) await supabase.from('projects').update({ cover_url: cover }).eq('id', projectId)
 
   const extra = (currentMedia || []).filter((r) => ![...idByFile.values()].includes(r.id))
-  if (extra.length) {
-    console.log(`\n  ${extra.length} archivo(s) que ya estaban en el proyecto no figuran en proyecto.json; los dejé como estaban (se borran desde /admin).`)
+  if (extra.length && cleanUp) {
+    for (const r of extra) {
+      const url = r.storage_path || r.external_url || ''
+      const name = decodeURIComponent(url.split('/').pop() || '').replace(/^\d+-/, '')
+      await supabase.from('project_media').delete().eq('id', r.id)
+      const marker = '/object/public/projects/'
+      const at = url.indexOf(marker)
+      if (at !== -1) {
+        await supabase.storage.from('projects').remove([decodeURIComponent(url.slice(at + marker.length))])
+      }
+      console.log(`  − ${name || r.media_type} (borrado: no está en proyecto.json)`)
+    }
+  } else if (extra.length) {
+    console.log(`\n  ${extra.length} archivo(s) que ya estaban en el proyecto no figuran en proyecto.json; los dejé.`)
+    console.log('  Para borrarlos, corré el mismo comando agregando --limpiar al final.')
   }
 
   if (!serviceKey) await supabase.auth.signOut()

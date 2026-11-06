@@ -20,6 +20,8 @@ export interface Project {
   client?: string | null
   role?: string | null
   year?: string | null
+  /** Link junto a la descripción (canal de YouTube, sitio…) */
+  link_url?: string | null
   created_at: string
   updated_at: string
   // Joined
@@ -42,6 +44,8 @@ export interface ProjectMedia {
   caption?: string | null
   /** Para un boceto: id de la pieza final que salió de él */
   pair_id?: string | null
+  /** Se reproduce en la tarjeta de la home al pasar el mouse */
+  preview?: boolean
 }
 
 // Site settings stored as key/value JSON in site_settings table
@@ -124,6 +128,7 @@ export interface ProjectFormData {
   client?: string
   role?: string
   year?: string
+  link_url?: string
 }
 
 export interface MediaFormData {
@@ -136,6 +141,7 @@ export interface MediaFormData {
   section?: MediaSection
   caption?: string
   pair_id?: string | null
+  preview?: boolean
 }
 
 // API response types

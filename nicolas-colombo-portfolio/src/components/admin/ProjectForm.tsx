@@ -38,9 +38,7 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
   const [description, setDescription] = useState(initialProject?.description || '')
   const [coverUrl, setCoverUrl] = useState(initialProject?.cover_url || '')
   const [body, setBody] = useState(initialProject?.body || '')
-  const [client, setClient] = useState(initialProject?.client || '')
-  const [role, setRole] = useState(initialProject?.role || '')
-  const [year, setYear] = useState(initialProject?.year || '')
+  const [linkUrl, setLinkUrl] = useState(initialProject?.link_url || '')
 
   // Media items list
   const [mediaList, setMediaList] = useState<ProjectMedia[]>(initialProject?.media || [])
@@ -75,9 +73,7 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
           cover_url: coverUrl,
           sort_order: initialProject.sort_order,
           body,
-          client,
-          role,
-          year,
+          link_url: linkUrl,
         })
 
         if (!res.success) throw new Error(res.error)
@@ -290,19 +286,15 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <label className="admin-label">Cliente / canal</label>
-              <input type="text" value={client} onChange={(e) => setClient(e.target.value)} placeholder="Ej: Feta Odyssey (YouTube)" className="admin-input" />
-            </div>
-            <div className="space-y-2">
-              <label className="admin-label">Tu rol</label>
-              <input type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Ej: Animation, illustration" className="admin-input" />
-            </div>
-            <div className="space-y-2">
-              <label className="admin-label">Año</label>
-              <input type="text" value={year} onChange={(e) => setYear(e.target.value)} placeholder="Ej: 2024–2026" className="admin-input" />
-            </div>
+          <div className="space-y-2">
+            <label className="admin-label">Link (canal de YouTube, sitio…) — opcional</label>
+            <input
+              type="url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://www.youtube.com/@..."
+              className="admin-input"
+            />
           </div>
 
           <div className="space-y-2">
@@ -484,6 +476,17 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
                           <span className="md:col-span-2" />
                         )}
                       </div>
+
+                      {!isEmbed && (
+                        <label className="flex items-center gap-2 font-body text-xs text-text-secondary cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!media.preview}
+                            onChange={(e) => handleMediaPatch(media.id, { preview: e.target.checked })}
+                          />
+                          Vista previa en la home (se reproduce al pasar el mouse por la tarjeta)
+                        </label>
+                      )}
 
                       <input
                         type="text"
