@@ -34,6 +34,8 @@ export default async function HomePage() {
 
   const identity = settings.identity
   const reel = findReel(identity, projects)
+  // El reel tiene su propio botón ("Reel"): no se repite en Selected work
+  const gridProjects = projects.filter((p) => !/reel/i.test(`${p.slug} ${p.title}`))
 
   return (
     <ReelProvider reel={reel}>
@@ -50,7 +52,7 @@ export default async function HomePage() {
           availability={identity.availability ?? DEFAULT_AVAILABILITY}
         />
 
-        <ProjectGrid projects={projects} />
+        <ProjectGrid projects={gridProjects} />
 
         <AboutSection identity={identity} />
 

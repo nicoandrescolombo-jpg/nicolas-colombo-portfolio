@@ -79,7 +79,8 @@ export default function AnimatedImage({
   // Datos reales del archivo (nombre, tamaño y escala), como en una hoja de revisión
   const fileName = (() => {
     try {
-      return decodeURIComponent(new URL(src, 'https://x').pathname.split('/').pop() || '')
+      // Sin el prefijo numérico que agrega la subida ("1794000204782-")
+      return decodeURIComponent(new URL(src, 'https://x').pathname.split('/').pop() || '').replace(/^\d{10,}-/, '')
     } catch {
       return ''
     }
@@ -123,6 +124,7 @@ export default function AnimatedImage({
       </p>
     ) : null
 
+  // Imágenes grandes: sin epígrafe de archivo (solo tiene sentido en pixel art)
   if (nat && !isSmall) {
     return (
       <div>
@@ -133,7 +135,6 @@ export default function AnimatedImage({
         >
           {img}
         </div>
-        {caption}
       </div>
     )
   }
