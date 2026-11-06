@@ -2,7 +2,9 @@
 
 export type ProjectType = 'individual' | 'gif_sequence'
 export type ProjectStatus = 'draft' | 'published'
-export type MediaType = 'image' | 'gif' | 'youtube' | 'vimeo'
+/** 'webm' queda por compatibilidad con filas viejas; lo nuevo se guarda como 'video' */
+export type MediaType = 'image' | 'gif' | 'youtube' | 'vimeo' | 'video' | 'webm'
+export type MediaSection = 'final' | 'process'
 
 export interface Project {
   id: string
@@ -13,6 +15,11 @@ export interface Project {
   status: ProjectStatus
   cover_url: string | null
   sort_order: number
+  /** Texto largo "About the project" (párrafos separados por línea en blanco) */
+  body?: string | null
+  client?: string | null
+  role?: string | null
+  year?: string | null
   created_at: string
   updated_at: string
   // Joined
@@ -30,6 +37,11 @@ export interface ProjectMedia {
   height: number | null
   sort_order: number
   created_at: string
+  /** Si falta (base sin migrar), se toma como 'final' */
+  section?: MediaSection
+  caption?: string | null
+  /** Para un boceto: id de la pieza final que salió de él */
+  pair_id?: string | null
 }
 
 // Site settings stored as key/value JSON in site_settings table
@@ -108,6 +120,10 @@ export interface ProjectFormData {
   status: ProjectStatus
   cover_url: string
   sort_order: number
+  body?: string
+  client?: string
+  role?: string
+  year?: string
 }
 
 export interface MediaFormData {
@@ -117,6 +133,9 @@ export interface MediaFormData {
   width?: number
   height?: number
   sort_order: number
+  section?: MediaSection
+  caption?: string
+  pair_id?: string | null
 }
 
 // API response types

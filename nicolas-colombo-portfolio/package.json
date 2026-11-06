@@ -9,7 +9,8 @@
     "preview": "npx wrangler dev",
     "deploy": "npx @opennextjs/cloudflare build && npx wrangler deploy",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "subir": "node scripts/subir.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",

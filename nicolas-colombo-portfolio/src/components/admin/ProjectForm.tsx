@@ -1,12 +1,19 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { Project, ProjectType, ProjectStatus, MediaType } from '@/types'
-import { createProject, updateProject, addProjectMedia, deleteProjectMedia } from '@/lib/actions/projects'
+import type { Project, ProjectType, ProjectStatus, MediaType, MediaSection, ProjectMedia } from '@/types'
+import {
+  createProject,
+  updateProject,
+  addProjectMedia,
+  deleteProjectMedia,
+  updateProjectMedia,
+} from '@/lib/actions/projects'
+import { mediaTypeFromName, readDimensions, uploadToProjectsBucket } from '@/lib/utils/upload'
 import Button from '@/components/ui/Button'
-import { Plus, Trash2, ArrowLeft, Image as ImageIcon, Video, Layers, Upload } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, Upload, ChevronUp, ChevronDown } from 'lucide-react'
 import { toastSuccess, toastError } from '@/components/ui/Toast'
 
 interface ProjectFormProps {
@@ -16,8 +23,11 @@ interface ProjectFormProps {
 export default function ProjectForm({ initialProject }: ProjectFormProps) {
   const router = useRouter()
   const isEditing = !!initialProject
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState('')
   const [projectType, setProjectType] = useState<ProjectType>(
     initialProject?.project_type || 'individual'
   )
@@ -27,12 +37,23 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
   const [title, setTitle] = useState(initialProject?.title || '')
   const [description, setDescription] = useState(initialProject?.description || '')
   const [coverUrl, setCoverUrl] = useState(initialProject?.cover_url || '')
+  const [body, setBody] = useState(initialProject?.body || '')
+  const [client, setClient] = useState(initialProject?.client || '')
+  const [role, setRole] = useState(initialProject?.role || '')
+  const [year, setYear] = useState(initialProject?.year || '')
 
   // Media items list
-  const [mediaList, setMediaList] = useState(initialProject?.media || [])
+  const [mediaList, setMediaList] = useState<ProjectMedia[]>(initialProject?.media || [])
+  // Sección a la que van los archivos que se suben
+  const [uploadSection, setUploadSection] = useState<MediaSection>('final')
 
-  // New media inputs
-  const [newMediaType, setNewMediaType] = useState<MediaType>('image')
+  // Mantener la lista al día después de router.refresh()
+  React.useEffect(() => {
+    setMediaList(initialProject?.media || [])
+  }, [initialProject?.media])
+
+  // New media inputs (for YouTube / Vimeo)
+  const [newMediaType, setNewMediaType] = useState<MediaType>('youtube')
   const [newExternalUrl, setNewExternalUrl] = useState('')
   const [newAltText, setNewAltText] = useState('')
 
@@ -53,6 +74,10 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
           status,
           cover_url: coverUrl,
           sort_order: initialProject.sort_order,
+          body,
+          client,
+          role,
+          year,
         })
 
         if (!res.success) throw new Error(res.error)
@@ -84,13 +109,13 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
     }
   }
 
-  const handleAddMedia = async () => {
+  const handleAddVideoUrl = async () => {
     if (!initialProject) {
       toastError('Primero guarda el proyecto para agregar archivos multimedia')
       return
     }
 
-    if ((newMediaType === 'youtube' || newMediaType === 'vimeo') && !newExternalUrl.trim()) {
+    if (!newExternalUrl.trim()) {
       toastError('Debes ingresar la URL del video')
       return
     }
@@ -99,21 +124,87 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
     try {
       const res = await addProjectMedia(initialProject.id, {
         media_type: newMediaType,
-        external_url: newExternalUrl || undefined,
+        external_url: newExternalUrl,
         alt_text: newAltText || undefined,
         sort_order: mediaList.length,
       })
 
       if (!res.success) throw new Error(res.error)
-      toastSuccess('Medio agregado con éxito')
+      toastSuccess('Video agregado con éxito')
       setNewExternalUrl('')
       setNewAltText('')
       router.refresh()
     } catch (err: any) {
-      toastError(err.message || 'Error al agregar archivo')
+      toastError(err.message || 'Error al agregar video')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    if (!initialProject) {
+      toastError('Primero guarda el proyecto para subir archivos')
+      return
+    }
+
+    setUploading(true)
+    const total = files.length
+    let done = 0
+
+    let i = 0
+    for (const file of Array.from(files)) {
+      i++
+      setUploadProgress(`Subiendo ${file.name} (${i}/${total})…`)
+      try {
+        // Directo del navegador a Storage (sin pasar por el servidor)
+        const [url, size] = await Promise.all([
+          uploadToProjectsBucket(file, initialProject.id),
+          readDimensions(file),
+        ])
+
+        const mediaRes = await addProjectMedia(initialProject.id, {
+          media_type: mediaTypeFromName(file.name),
+          storage_path: url,
+          alt_text: file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '),
+          width: size?.width,
+          height: size?.height,
+          sort_order: mediaList.length + done,
+          section: uploadSection,
+        })
+        if (!mediaRes.success) throw new Error(mediaRes.error)
+        done++
+      } catch (err: any) {
+        toastError(`Error con ${file.name}: ${err.message}`)
+      }
+    }
+
+    setUploading(false)
+    setUploadProgress('')
+    if (done > 0) toastSuccess(`${done} archivo${done > 1 ? 's' : ''} subido${done > 1 ? 's' : ''} con éxito`)
+    router.refresh()
+  }
+
+  const handleMediaPatch = async (
+    mediaId: string,
+    patch: Parameters<typeof updateProjectMedia>[2],
+  ) => {
+    if (!initialProject) return
+    setMediaList((list) => list.map((m) => (m.id === mediaId ? { ...m, ...patch } as ProjectMedia : m)))
+    const res = await updateProjectMedia(mediaId, initialProject.id, patch)
+    if (!res.success) toastError(res.error || 'No se pudo guardar el cambio')
+  }
+
+  const moveMedia = async (index: number, dir: -1 | 1) => {
+    const target = index + dir
+    if (target < 0 || target >= mediaList.length) return
+    const list = [...mediaList]
+    ;[list[index], list[target]] = [list[target], list[index]]
+    setMediaList(list)
+    await Promise.all([
+      handleMediaPatch(list[index].id, { sort_order: index }),
+      handleMediaPatch(list[target].id, { sort_order: target }),
+    ])
   }
 
   const handleDeleteMedia = async (mediaId: string) => {
@@ -199,6 +290,32 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
             />
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <label className="admin-label">Cliente / canal</label>
+              <input type="text" value={client} onChange={(e) => setClient(e.target.value)} placeholder="Ej: Feta Odyssey (YouTube)" className="admin-input" />
+            </div>
+            <div className="space-y-2">
+              <label className="admin-label">Tu rol</label>
+              <input type="text" value={role} onChange={(e) => setRole(e.target.value)} placeholder="Ej: Animation, illustration" className="admin-input" />
+            </div>
+            <div className="space-y-2">
+              <label className="admin-label">Año</label>
+              <input type="text" value={year} onChange={(e) => setYear(e.target.value)} placeholder="Ej: 2024–2026" className="admin-input" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="admin-label">Sobre el proyecto (texto largo, en inglés)</label>
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="El encargo, cómo lo resolviste, qué aprendiste. Separá párrafos con una línea en blanco."
+              rows={8}
+              className="admin-input"
+            />
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="admin-label">Estado de Publicación</label>
@@ -235,17 +352,67 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
       {/* Media Management (Only when editing) */}
       {isEditing && (
         <div className="bg-[#141414] border border-[#222222] p-8 rounded-lg space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-ui text-sm uppercase tracking-wider text-accent font-medium">
-                2. Contenido Multimedia
-              </h2>
-              <p className="font-body text-xs text-text-tertiary mt-1">
-                {projectType === 'gif_sequence'
-                  ? 'Agrega la secuencia vertical de GIFs animados en orden cronológico.'
-                  : 'Agrega el video principal de YouTube/Vimeo o la imagen final.'}
-              </p>
-            </div>
+          <div>
+            <h2 className="font-ui text-sm uppercase tracking-wider text-accent font-medium">
+              2. Contenido Multimedia
+            </h2>
+            <p className="font-body text-xs text-text-tertiary mt-1">
+              {projectType === 'gif_sequence'
+                ? 'Agrega la secuencia vertical de GIFs animados en orden cronológico.'
+                : 'Subí imágenes, GIFs o clips webm/mp4 (hasta 50 MB), o pegá URLs de YouTube/Vimeo.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="admin-label !mb-0">Los archivos nuevos van a:</span>
+            {(['final', 'process'] as MediaSection[]).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setUploadSection(s)}
+                className={`font-ui text-xs px-3 py-1.5 rounded border transition-colors ${
+                  uploadSection === s
+                    ? 'border-accent text-accent'
+                    : 'border-[#333] text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {s === 'final' ? 'Resultado final' : 'Proceso'}
+              </button>
+            ))}
+          </div>
+
+          {/* Drag & Drop / Multi-file upload */}
+          <div
+            className="border-2 border-dashed border-[#333] rounded-lg p-8 text-center cursor-pointer hover:border-accent/50 transition-colors"
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault()
+              handleFileUpload(e.dataTransfer.files)
+            }}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".png,.jpg,.jpeg,.webp,.gif,.webm,.mp4"
+              className="hidden"
+              onChange={(e) => handleFileUpload(e.target.files)}
+            />
+            <Upload size={28} className="mx-auto mb-3 text-text-tertiary" />
+            {uploading ? (
+              <p className="font-body text-sm text-accent">{uploadProgress}</p>
+            ) : (
+              <>
+                <p className="font-body text-sm text-text-secondary">
+                  Arrastrá archivos acá o{' '}
+                  <span className="text-accent underline">hacé click para seleccionar</span>
+                </p>
+                <p className="font-body text-xs text-text-tertiary mt-1">
+                  Acepta: .png .jpg .webp .gif .webm .mp4 — podés seleccionar varios a la vez
+                </p>
+              </>
+            )}
           </div>
 
           {/* Existing Media List */}
@@ -255,60 +422,125 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
                 No hay archivos asociados aún.
               </p>
             ) : (
-              mediaList.map((media, idx) => (
-                <div
-                  key={media.id}
-                  className="p-4 bg-[#101010] border border-[#222222] rounded-md flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-4">
-                    <span className="font-mono text-xs text-text-tertiary">#{idx + 1}</span>
-                    <span className="font-ui text-xs px-2 py-0.5 rounded bg-white/5 uppercase text-text-secondary">
-                      {media.media_type}
-                    </span>
-                    <span className="font-body text-xs text-text-primary truncate max-w-md">
-                      {media.external_url || media.storage_path || 'Archivo cargado'}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteMedia(media.id)}
-                    className="p-1.5 text-state-error/70 hover:text-state-error transition-colors"
+              mediaList.map((media, idx) => {
+                const src = media.storage_path || media.external_url
+                const isClip = media.media_type === 'video' || media.media_type === 'webm'
+                const isEmbed = media.media_type === 'youtube' || media.media_type === 'vimeo'
+                const section = media.section ?? 'final'
+                return (
+                  <div
+                    key={media.id}
+                    className="p-4 bg-[#101010] border border-[#222222] rounded-md flex gap-4"
                   >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))
+                    <div className="w-24 h-16 shrink-0 bg-black rounded overflow-hidden flex items-center justify-center">
+                      {src && !isEmbed ? (
+                        isClip ? (
+                          <video src={`${src}#t=1`} muted preload="metadata" className="w-full h-full object-contain bg-[#E8E2D6]" />
+                        ) : (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={src} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        )
+                      ) : (
+                        <span className="font-ui text-[10px] uppercase text-text-tertiary">{media.media_type}</span>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="font-mono text-xs text-text-tertiary shrink-0">#{idx + 1}</span>
+                        <span className="font-ui text-xs px-2 py-0.5 rounded bg-white/5 uppercase text-text-secondary shrink-0">
+                          {media.media_type}
+                        </span>
+                        <span className="font-body text-xs text-text-primary truncate">
+                          {media.alt_text || src || 'Archivo'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <select
+                          value={section}
+                          onChange={(e) => handleMediaPatch(media.id, { section: e.target.value as MediaSection })}
+                          className="admin-input !py-1.5 text-xs cursor-pointer"
+                        >
+                          <option value="final">Resultado final</option>
+                          <option value="process">Proceso</option>
+                        </select>
+                        {section === 'process' ? (
+                          <select
+                            value={media.pair_id || ''}
+                            onChange={(e) => handleMediaPatch(media.id, { pair_id: e.target.value || null })}
+                            className="admin-input !py-1.5 text-xs cursor-pointer md:col-span-2"
+                          >
+                            <option value="">Boceto de… (ninguna)</option>
+                            {mediaList
+                              .filter((m) => (m.section ?? 'final') === 'final')
+                              .map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  Boceto de: {m.alt_text || m.media_type}
+                                </option>
+                              ))}
+                          </select>
+                        ) : (
+                          <span className="md:col-span-2" />
+                        )}
+                      </div>
+
+                      <input
+                        type="text"
+                        defaultValue={media.caption || ''}
+                        onBlur={(e) => {
+                          if (e.target.value !== (media.caption || '')) {
+                            handleMediaPatch(media.id, { caption: e.target.value })
+                          }
+                        }}
+                        placeholder="Epígrafe (opcional, en inglés)"
+                        className="admin-input !py-1.5 text-xs"
+                      />
+                    </div>
+
+                    <div className="flex flex-col items-center gap-1 shrink-0">
+                      <button type="button" onClick={() => moveMedia(idx, -1)} disabled={idx === 0} className="p-1 text-text-tertiary hover:text-text-primary disabled:opacity-30" aria-label="Subir">
+                        <ChevronUp size={16} />
+                      </button>
+                      <button type="button" onClick={() => moveMedia(idx, 1)} disabled={idx === mediaList.length - 1} className="p-1 text-text-tertiary hover:text-text-primary disabled:opacity-30" aria-label="Bajar">
+                        <ChevronDown size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMedia(media.id)}
+                        className="p-1 text-state-error/70 hover:text-state-error transition-colors"
+                        aria-label="Eliminar"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })
             )}
           </div>
 
-          {/* Add Media Form */}
+          {/* Add Media via YouTube / Vimeo URL */}
           <div className="p-6 bg-[#101010] border border-[#222222] rounded-lg space-y-4">
             <h3 className="font-ui text-xs uppercase tracking-wider text-text-secondary">
-              Agregar Nuevo Medio
+              Agregar video de YouTube o Vimeo
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="admin-label">Tipo</label>
+                <label className="admin-label">Plataforma</label>
                 <select
                   value={newMediaType}
                   onChange={(e) => setNewMediaType(e.target.value as MediaType)}
                   className="admin-input cursor-pointer"
                 >
-                  <option value="image">Imagen (.jpg, .png, .webp)</option>
-                  <option value="gif">GIF Animado (.gif)</option>
-                  <option value="youtube">Video YouTube</option>
-                  <option value="vimeo">Video Vimeo</option>
+                  <option value="youtube">YouTube</option>
+                  <option value="vimeo">Vimeo</option>
                 </select>
               </div>
 
               <div className="md:col-span-2">
-                <label className="admin-label">
-                  {newMediaType === 'youtube' || newMediaType === 'vimeo'
-                    ? 'URL del Video (YouTube o Vimeo)'
-                    : 'Ruta o URL del Archivo'}
-                </label>
+                <label className="admin-label">URL del Video</label>
                 <input
                   type="text"
                   value={newExternalUrl}
@@ -316,9 +548,7 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
                   placeholder={
                     newMediaType === 'youtube'
                       ? 'https://www.youtube.com/watch?v=...'
-                      : newMediaType === 'vimeo'
-                      ? 'https://vimeo.com/...'
-                      : 'https://... o nombre del archivo'
+                      : 'https://vimeo.com/...'
                   }
                   className="admin-input"
                 />
@@ -326,12 +556,12 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
             </div>
 
             <div>
-              <label className="admin-label">Texto Descriptivo / Alt Text</label>
+              <label className="admin-label">Alt Text (Opcional)</label>
               <input
                 type="text"
                 value={newAltText}
                 onChange={(e) => setNewAltText(e.target.value)}
-                placeholder="Descripción para accesibilidad o subtítulo"
+                placeholder="Descripción del video"
                 className="admin-input"
               />
             </div>
@@ -341,11 +571,11 @@ export default function ProjectForm({ initialProject }: ProjectFormProps) {
                 variant="secondary"
                 size="sm"
                 type="button"
-                onClick={handleAddMedia}
+                onClick={handleAddVideoUrl}
                 isLoading={loading}
               >
                 <Plus size={16} />
-                <span>Agregar a la Obra</span>
+                <span>Agregar video</span>
               </Button>
             </div>
           </div>

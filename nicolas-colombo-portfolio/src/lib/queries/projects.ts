@@ -85,24 +85,29 @@ export async function getPublishedProjects(): Promise<Project[]> {
 /**
  * Get a single project by slug with its media.
  */
-export async function getProjectBySlug(slug: string): Promise<Project | null> {
+export async function getProjectBySlug(
+  slug: string,
+  { includeDrafts = false }: { includeDrafts?: boolean } = {},
+): Promise<Project | null> {
   if (!isSupabaseConfigured()) {
-    return MOCK_PROJECTS.find((p) => p.slug === slug && p.status === 'published') ?? null
+    return MOCK_PROJECTS.find((p) => p.slug === slug && (includeDrafts || p.status === 'published')) ?? null
   }
 
   try {
     const supabase = await createServerSupabase()
-    const { data: project, error } = await supabase
+    let query = supabase
       .from('projects')
       .select(`
         *,
         media:project_media(*)
       `)
       .eq('slug', slug)
-      .eq('status', 'published')
-      .single()
+    // Los borradores solo los ve el admin logueado (RLS igual lo exige)
+    if (!includeDrafts) query = query.eq('status', 'published')
+    const { data: project, error } = await query.single()
 
     if (error || !project) {
+      if (error && error.code !== 'PGRST116') console.warn('getProjectBySlug:', error.message)
       return null
     }
 

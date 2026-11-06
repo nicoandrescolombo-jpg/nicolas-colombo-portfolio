@@ -28,9 +28,17 @@ Next.js 15.0.3 (App Router) · React 18 · TypeScript · Tailwind 3.4 · Framer 
 - Cambiar un secret: `npx wrangler secret put NOMBRE` (se aplica al instante, sin deploy).
 - Ver secrets cargados: `npx wrangler secret list`
 - Ver logs en vivo: `npx wrangler tail`
+- Subir un trabajo entero desde una carpeta: `npm run subir -- "C:\ruta\carpeta"` (`scripts/subir.mjs`). La 1ª vez arma `proyecto.json` en la carpeta; la 2ª pide la contraseña del admin y sube final, proceso, epígrafes y `texto.md`. Actualiza por slug y no repite archivos ya subidos.
+
+## Página de proyecto (06/11/2026)
+- Tres partes: I. Final work → II. Process → III. About the project (`projects.body`), más créditos `client` / `role` / `year`.
+- `project_media.section` (`final` | `process`), `caption` (epígrafe) y `pair_id` (boceto → su final). Clips subidos: `media_type = 'video'`. Migración: `supabase/migrations/004_project_process.sql`.
+- Transición: `ProcessDissolve.tsx`, fundido final → boceto manejado por el scroll, en 12 pasos. `SketchPair.tsx`: botón Sketch / Final.
+- El panel sube los archivos directo del navegador a Storage (`src/lib/utils/upload.ts`); las server actions cortan a 1 MB.
+- Logueado como admin se ven los borradores en `/project/<slug>`.
 
 ## Variables de entorno
-- Local: `.env.local` con `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `RESEND_API_KEY`.
+- Local: `.env.local` con `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `RESEND_API_KEY`. Opcional: `SUPABASE_SERVICE_ROLE_KEY` (solo local, la usa `npm run subir` para no pedir contraseña; nunca va al Worker ni al repo).
 - En el Worker (secrets): las mismas tres.
 - Las `NEXT_PUBLIC_*` se fijan en el build: si cambian, hay que volver a hacer deploy.
 

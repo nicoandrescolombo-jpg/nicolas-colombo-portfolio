@@ -35,6 +35,10 @@ export async function createProject(formData: ProjectFormData): Promise<ActionRe
         status: formData.status || 'draft',
         cover_url: formData.cover_url || null,
         sort_order: formData.sort_order || 0,
+        ...(formData.body !== undefined ? { body: formData.body || null } : {}),
+        ...(formData.client !== undefined ? { client: formData.client || null } : {}),
+        ...(formData.role !== undefined ? { role: formData.role || null } : {}),
+        ...(formData.year !== undefined ? { year: formData.year || null } : {}),
       })
       .select('id, slug')
       .single()
@@ -58,10 +62,10 @@ export async function updateProject(id: string, formData: Partial<ProjectFormDat
   try {
     const supabase = await checkAuth()
 
+    // El slug no se toca al editar: si cambiara con el título, se romperían
+    // los links ya compartidos a /project/<slug>.
     const updatePayload: any = { ...formData }
-    if (formData.title && !formData.slug) {
-      updatePayload.slug = generateSlug(formData.title)
-    }
+    if (!formData.slug) delete updatePayload.slug
 
     const { error } = await supabase
       .from('projects')
@@ -125,11 +129,16 @@ export async function addProjectMedia(projectId: string, mediaData: MediaFormDat
         width: mediaData.width || null,
         height: mediaData.height || null,
         sort_order: mediaData.sort_order || 0,
+        // Columnas de la migración 004: solo se mandan si vienen, así el
+        // panel sigue funcionando con una base sin migrar.
+        ...(mediaData.section ? { section: mediaData.section } : {}),
+        ...(mediaData.caption ? { caption: mediaData.caption } : {}),
+        ...(mediaData.pair_id ? { pair_id: mediaData.pair_id } : {}),
       })
       .select('id')
       .single()
 
-    if (error) throw error
+    if (error) throw new Error(explainDbError(error.message))
 
     revalidatePath(`/admin/projects/${projectId}`)
     revalidatePath('/')
@@ -139,6 +148,46 @@ export async function addProjectMedia(projectId: string, mediaData: MediaFormDat
     console.error('Error in addProjectMedia:', err)
     return { success: false, error: err.message || 'Error al asociar archivo' }
   }
+}
+
+/**
+ * Edit a media item's section, caption, alt text, pairing or order.
+ */
+export async function updateProjectMedia(
+  mediaId: string,
+  projectId: string,
+  patch: Partial<Pick<MediaFormData, 'section' | 'caption' | 'alt_text' | 'pair_id' | 'sort_order'>>,
+): Promise<ActionResult> {
+  try {
+    const supabase = await checkAuth()
+    const payload: Record<string, unknown> = {}
+    if (patch.section) payload.section = patch.section
+    if (patch.caption !== undefined) payload.caption = patch.caption || null
+    if (patch.alt_text !== undefined) payload.alt_text = patch.alt_text || null
+    if (patch.pair_id !== undefined) payload.pair_id = patch.pair_id || null
+    if (patch.sort_order !== undefined) payload.sort_order = patch.sort_order
+
+    const { error } = await supabase.from('project_media').update(payload).eq('id', mediaId)
+    if (error) throw new Error(explainDbError(error.message))
+
+    revalidatePath(`/admin/projects/${projectId}`)
+    revalidatePath('/')
+    return { success: true }
+  } catch (err: any) {
+    console.error('Error in updateProjectMedia:', err)
+    return { success: false, error: err.message || 'Error al actualizar archivo' }
+  }
+}
+
+/** Traduce los errores típicos de una base sin la migración 004 */
+function explainDbError(message: string): string {
+  if (/media_type_check/.test(message)) {
+    return 'La base no acepta clips de video todavía: falta correr supabase/migrations/004_project_process.sql.'
+  }
+  if (/column .*(section|caption|pair_id|body|client|role|year)/i.test(message)) {
+    return 'Falta correr supabase/migrations/004_project_process.sql en Supabase.'
+  }
+  return message
 }
 
 /**
@@ -190,6 +239,10 @@ export async function updateSiteSettings(key: 'hero' | 'contact' | 'identity', v
   }
 }
 
+
+// Los archivos ya no pasan por acá: el panel los sube directo del navegador a
+// Storage (ver src/lib/utils/upload.ts). Una server action corta todo lo que
+// pase de 1 MB, que era el error al subir GIFs y clips.
 
 import { sendInquiryNotification } from '@/lib/utils/email'
 
