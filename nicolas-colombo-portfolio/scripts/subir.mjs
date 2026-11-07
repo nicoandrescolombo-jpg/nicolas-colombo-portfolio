@@ -363,9 +363,32 @@ async function main() {
     await supabase.from('project_media').update({ pair_id: pairId || null }).eq('id', idByFile.get(it.archivo))
   }
 
-  // Portada
-  const cover = m.portada ? urlByFile.get(m.portada) : null
-  if (m.portada && !cover) console.warn(`  ! La portada "${m.portada}" no está en la lista de archivos`)
+  // Portada: una de las piezas, o una imagen aparte de la carpeta que solo se usa de portada
+  let cover = m.portada ? urlByFile.get(m.portada) : null
+  if (m.portada && !cover) {
+    const full = path.join(dir, m.portada)
+    if (!fs.existsSync(full)) {
+      console.warn(`  ! No encuentro la portada "${m.portada}" en la carpeta`)
+    } else {
+      const safe = safeFileName(m.portada)
+      const { data: proj } = await supabase.from('projects').select('cover_url').eq('id', projectId).single()
+      const already = proj?.cover_url && decodeURIComponent(proj.cover_url.split('/').pop() || '').replace(/^\d+-/, '') === safe
+      if (already) {
+        cover = proj.cover_url
+        console.log(`  = portada ${m.portada} (ya estaba)`)
+      } else {
+        const storagePath = `${projectId}/${Date.now()}-${safe}`
+        const { error } = await supabase.storage
+          .from('projects')
+          .upload(storagePath, fs.readFileSync(full), { contentType: mime(m.portada), cacheControl: '31536000', upsert: false })
+        if (error) console.warn(`  ! Storage rechazó la portada: ${error.message}`)
+        else {
+          cover = supabase.storage.from('projects').getPublicUrl(storagePath).data.publicUrl
+          console.log(`  ↑ portada ${m.portada}`)
+        }
+      }
+    }
+  }
   if (cover) await supabase.from('projects').update({ cover_url: cover }).eq('id', projectId)
 
   const extra = (currentMedia || []).filter((r) => ![...idByFile.values()].includes(r.id))

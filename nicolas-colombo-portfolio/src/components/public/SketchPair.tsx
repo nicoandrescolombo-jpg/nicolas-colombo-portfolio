@@ -35,11 +35,11 @@ export default function SketchPair({
   const layer = (item: ProjectMedia, src: string, visible: boolean, label: string) => (
     <div
       className="absolute inset-0 transition-opacity duration-500 [transition-timing-function:steps(6,end)] motion-reduce:transition-none"
-      style={{ opacity: visible ? 1 : 0 }}
+      style={{ opacity: visible ? 1 : 0, pointerEvents: visible ? undefined : 'none' }}
       aria-hidden={!visible}
     >
       {item.media_type === 'video' || item.media_type === 'webm' ? (
-        <LoopVideo src={src} label={`${title}, ${label}`} className="h-full object-contain" />
+        <LoopVideo src={src} label={`${title}, ${label}`} className="h-full object-contain" silent={!visible} />
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={src} alt={`${title}, ${label}`} loading="lazy" className="w-full h-full object-contain" />
