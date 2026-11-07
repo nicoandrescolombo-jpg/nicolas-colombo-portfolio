@@ -28,7 +28,7 @@ type Dir = 'center' | 'up' | 'down' | 'left' | 'right'
 type Anim = 'idle' | 'blink' | Look
 
 const FRAMES: Record<Anim, number> = { idle: 8, blink: 9, up: 18, down: 17, right: 20 }
-// Cuadros de cada mirada: ida, pausa (en loop) y vuelta al centro
+// Cuadros de cada mirada: ida, pausa (queda fijo en el primero) y vuelta al centro
 const LOOK: Record<Look, { out: number[]; hold: number[]; back: number[] }> = {
   up: { out: [5, 6, 7], hold: [8, 9, 10, 11, 12, 13, 14, 15], back: [16, 17] },
   down: { out: [5, 6], hold: [7, 8, 9, 10, 11, 12, 13, 14, 15], back: [16] },
@@ -202,7 +202,7 @@ export default function EyeRig({ group }: { group: PixelGroup }) {
             startBack(L.back)
             break
           }
-          s.i = (s.i + 1) % L.hold.length
+          // Se queda quieto mirando hacia ese lado (sin loop)
           break
         }
         case 'back': {
