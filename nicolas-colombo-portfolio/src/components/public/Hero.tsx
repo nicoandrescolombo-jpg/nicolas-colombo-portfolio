@@ -78,6 +78,15 @@ export default function Hero({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoError, setVideoError] = useState(false);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // La flecha de "bajá" sobra una vez que la persona ya empezó a scrollear
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const activeVideoUrl = isMobile ? (videoMobileUrl ?? videoUrl) : videoUrl;
   const showVideo = !reducedMotion && !videoError && !!activeVideoUrl;
@@ -180,6 +189,35 @@ export default function Hero({
               </button>
             </div>
           </div>
+
+          {/* Flecha que invita a bajar: aparece a los 3 s y se va al empezar a scrollear */}
+          <button
+            type="button"
+            onClick={() => scrollToId('work')}
+            aria-label="Scroll to the work"
+            tabIndex={scrolled ? -1 : 0}
+            className={`mt-8 sm:mt-12 p-3 text-paper/70 hover:text-paper transition-[color,opacity] duration-300 ${
+              scrolled ? 'opacity-0 pointer-events-none' : ''
+            }`}
+          >
+            <span className="scroll-cue block drop-shadow-[0_1px_8px_rgba(0,0,0,0.7)]">
+            <svg
+              className="scroll-cue-arrow block"
+              width="22"
+              height="40"
+              viewBox="0 0 22 40"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.25"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M11 2 V36" />
+              <path d="M3 28 L11 37 L19 28" />
+            </svg>
+            </span>
+          </button>
         </div>
       </div>
 
@@ -195,7 +233,7 @@ export default function Hero({
             onClick={() => scrollToId('work')}
             className="hidden sm:inline type-sc text-[1rem] text-paper/60 hover:text-paper transition-colors"
           >
-            Selected work
+            Work
           </button>
         </div>
       </div>

@@ -72,7 +72,7 @@ Dirección: cine y animación de autor (LAIKA, Ghibli, el Nosferatu de Eggers, q
 - Tipografía: **Alegreya** (serif caligráfica de pluma ancha, como el logo) + **Alegreya SC** (versalitas reales) para menú, botones, rótulos y créditos. Clases propias en `globals.css`: `.type-display`, `.type-body`, `.type-sc`, `.figures` (no usar `font-*` en el sitio público: chocan con Tailwind).
 - Logo: `public/nicolas-colombo-wordmark.svg` (vector recortado). Favicon: `src/app/icon.svg` (la N del logo).
 - Hero en **letterbox 2:1** (franjas negras arriba y abajo, solo en pantallas apaisadas ≥768px): el menú vive en la franja de arriba, la disponibilidad en la de abajo.
-- Logo con "boil" (3 dibujos de filtro SVG alternados cada 2 cuadros; solo desktop, respeta reduced motion) y entrada "en dos" (CSS `steps()` a 12 fps). No agregar otras animaciones automáticas.
+- Logo con "boil" (3 dibujos de filtro SVG alternados cada 2 cuadros; solo desktop, respeta reduced motion) y entrada "en dos" (CSS `steps()` a 12 fps). No agregar otras animaciones automáticas (excepción pedida por Nico el 06/11: la flecha de "bajá" del hero, que aparece a los 3 s, sube y baja en 4 dibujos y se va al scrollear).
 - About armado como **créditos finales** (centrado, rol en versalitas a la izquierda, dato a la derecha).
 - Contacto: email grande + formulario con forma de encabezado de hoja de exposición (X-sheet), en líneas finas color hueso.
 - Pixel art: los GIF ≤ 400 px se agrandan en múltiplos enteros y sin suavizado (`AnimatedImage.tsx`), dentro de un panel con marcas de encuadre muy tenues (`FieldGuide.tsx`) y un epígrafe con nombre de archivo, tamaño real y escala.

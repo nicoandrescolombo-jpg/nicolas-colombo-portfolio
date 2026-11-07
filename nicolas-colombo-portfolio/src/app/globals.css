@@ -272,10 +272,31 @@
     }
   }
 
+  /* Flecha "seguí bajando" del hero: aparece a los 3 s y baja y sube en 4 dibujos
+     (3 cuadros cada uno, a 12 fps), como el resto de las animaciones del sitio */
+  @keyframes scroll-cue-bob {
+    0% { transform: translateY(0); }
+    25% { transform: translateY(3px); }
+    50% { transform: translateY(6px); }
+    75% { transform: translateY(3px); }
+  }
+
+  .scroll-cue {
+    animation: on-twos-in 0.34s steps(4, end) 3s both;
+  }
+
+  .scroll-cue-arrow {
+    animation: scroll-cue-bob 1s steps(1, end) 3s infinite;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .draw-on,
-    .on-twos-in {
+    .on-twos-in,
+    .scroll-cue-arrow {
       animation: none;
+    }
+    .scroll-cue {
+      animation: on-twos-in 0.01ms 3s both;
     }
   }
 

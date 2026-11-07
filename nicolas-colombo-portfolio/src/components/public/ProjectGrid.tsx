@@ -47,7 +47,7 @@ export default function ProjectGrid({ projects }: ProjectGridProps) {
   return (
     <section id="work" className="scroll-mt-16 py-24 sm:py-32">
       <div className="site-container">
-        <h2 className="type-display text-display-lg text-paper mb-10 sm:mb-14">Selected work</h2>
+        <h2 className="type-display text-display-lg text-paper mb-10 sm:mb-14">Work</h2>
 
         {!projects || projects.length === 0 ? (
           <p className="type-body text-lead max-w-[56ch]">
