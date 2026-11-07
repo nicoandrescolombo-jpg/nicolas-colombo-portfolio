@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import type { ProjectMedia } from '@/types'
 import { mediaSrc } from '@/lib/utils/portfolio'
+import AnimatedImage from './AnimatedImage'
 
 /**
  * Vista previa de la tarjeta de la home: reproduce, una tras otra, las piezas
@@ -32,7 +33,7 @@ export default function CardPreview({ items, gifMs = 3200 }: { items: ProjectMed
   if (!src) return null
 
   return (
-    <div className={`absolute inset-0 z-10 pointer-events-none ${isClip ? 'bg-paper' : 'bg-black'}`}>
+    <div className={`absolute inset-0 z-10 pointer-events-none ${isClip ? 'bg-paper' : 'bg-graphite'}`}>
       {isClip ? (
         <video
           key={round}
@@ -45,8 +46,9 @@ export default function CardPreview({ items, gifMs = 3200 }: { items: ProjectMed
           className="w-full h-full object-cover"
         />
       ) : (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img key={round} src={src} alt="" className="w-full h-full object-cover" />
+        // Pixel art: múltiplos enteros y sin suavizado (object-cover lo agrandaba
+        // a cualquier escala y lo dejaba borroso). Las imágenes grandes, como antes.
+        <AnimatedImage key={round} src={src} alt="" variant="fill" padding={0.06} />
       )}
     </div>
   )
