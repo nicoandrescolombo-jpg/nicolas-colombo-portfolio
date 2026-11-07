@@ -188,7 +188,8 @@ async function main() {
 
   let m
   try {
-    m = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+    // Sin la marca BOM que agregan algunos editores de Windows
+    m = JSON.parse(fs.readFileSync(manifestPath, 'utf8').replace(/^﻿/, ''))
   } catch (e) {
     fail(`proyecto.json tiene un error de formato: ${e.message}`)
   }

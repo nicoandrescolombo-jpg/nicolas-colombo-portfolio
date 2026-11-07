@@ -37,6 +37,12 @@ Next.js 15.0.3 (App Router) · React 18 · TypeScript · Tailwind 3.4 · Framer 
 - El panel sube los archivos directo del navegador a Storage (`src/lib/utils/upload.ts`); las server actions cortan a 1 MB.
 - Logueado como admin se ven los borradores en `/project/<slug>`.
 
+## Página de pixel art (proyectos `gif_sequence`, 06/11/2026)
+- `PixelSheets.tsx`: hojas de personaje. El **epígrafe** dice grupo y acción: `"The Brute · Idle"`. Piezas seguidas con el mismo grupo van en el mismo panel, a la misma escala entera y paradas sobre la misma línea. Grupos de una sola pieza seguidos se juntan en "More creatures". Lógica en `src/lib/utils/pixelSheets.ts`.
+- Bocetos: `pair_id` → su final (en `proyecto.json`, `boceto_de`). Botón Clean / Rough por hoja.
+- El grupo **"The Eye"** se muestra con `EyeRig.tsx`: mira hacia el cursor y parpadea con click. Usa tiras PNG en `public/pixel/eye/` (hechas con ffmpeg de los GIF del ojo; los cuadros de ida/pausa/vuelta están en `LOOK`).
+- Material: `01_Encargos\Raul\Selección` con su `proyecto.json`. Cuatro GIF de ahí tenían fondo negro pintado y se les quitó con ffmpeg (colorkey); los originales siguen en `Renders`.
+
 ## Variables de entorno
 - Local: `.env.local` con `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `RESEND_API_KEY`. Opcional: `SUPABASE_SERVICE_ROLE_KEY` (solo local, la usa `npm run subir` para no pedir contraseña; nunca va al Worker ni al repo).
 - En el Worker (secrets): las mismas tres.

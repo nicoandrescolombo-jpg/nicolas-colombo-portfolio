@@ -9,7 +9,8 @@ import { createClient } from '@/lib/supabase/server'
 import { findReel, mediaSrc, projectKind, projectThumbnail } from '@/lib/utils/portfolio'
 import { cn, typeset } from '@/lib/utils/helpers'
 import Navigation from '@/components/public/Navigation'
-import GifSequence from '@/components/public/GifSequence'
+import PixelSheets from '@/components/public/PixelSheets'
+import { pixelLightboxOrder } from '@/lib/utils/pixelSheets'
 import MediaItem, { isVisual, toLightboxItem } from '@/components/public/MediaItem'
 import { LightboxProvider, type LightboxItem } from '@/components/public/Lightbox'
 import ProcessDissolve from '@/components/public/ProcessDissolve'
@@ -131,7 +132,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
   // Piezas del visor, en el orden en que aparecen en la página
   const ordered: ProjectMedia[] =
     project.project_type === 'gif_sequence'
-      ? mediaList
+      ? pixelLightboxOrder(mediaList)
       : blocks.flatMap((b) =>
           b.kind === 'media' ? [b.item] : b.kind === 'dissolve' ? [b.final, b.sketch] : [b.sketch, b.final],
         )
@@ -196,7 +197,7 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           <LightboxProvider items={lightboxItems}>
           <section aria-label="Work">
             {project.project_type === 'gif_sequence' ? (
-              <GifSequence project={project} />
+              <PixelSheets media={mediaList} title={project.title} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-8 gap-y-8 sm:gap-y-12">
                 {blocks.map((b, i) => {
