@@ -36,6 +36,11 @@ export function projectKind(project: Project): string | null {
   if (/reel/i.test(`${project.slug} ${project.title}`)) return null
   if (project.project_type === 'gif_sequence') return 'Animation loops'
   if (media.some(isVideo)) return 'Film'
+  // Clips subidos (mp4/webm): varias canciones = videoclips; si no, animación
+  if (media.some((m) => m.media_type === 'video' || m.media_type === 'webm')) {
+    const songs = new Set(media.map((m) => (m.caption || '').split(/\s+·\s+/)).filter((p) => p.length > 1).map((p) => p[0]))
+    return songs.size >= 3 ? 'Music videos' : 'Animation'
+  }
   if (media.some((m) => m.media_type === 'gif')) return 'Animation loops'
   return 'Stills'
 }

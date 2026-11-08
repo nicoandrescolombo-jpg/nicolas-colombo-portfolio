@@ -14,12 +14,15 @@ export default function SketchPair({
   sketch,
   final,
   title,
+  startOnFinal = false,
 }: {
   sketch: ProjectMedia
   final: ProjectMedia
   title: string
+  /** Mostrar primero el final (en vez del boceto) */
+  startOnFinal?: boolean
 }) {
-  const [showFinal, setShowFinal] = useState(false)
+  const [showFinal, setShowFinal] = useState(startOnFinal)
   const sketchSrc = mediaSrc(sketch)
   const finalSrc = mediaSrc(final)
   if (!sketchSrc || !finalSrc) return null

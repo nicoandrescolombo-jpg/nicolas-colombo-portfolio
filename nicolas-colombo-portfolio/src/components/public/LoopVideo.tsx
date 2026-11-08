@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils/helpers'
 
 /**
  * Clip de animación (webm/mp4 subido a Storage).
- * Se reproduce en loop y sin sonido, como un GIF. Si el clip tiene audio
+ * Se reproduce en loop y sin sonido, como un GIF, solo mientras está en pantalla
+ * (y no se descarga hasta que se acerca). Si el clip tiene audio
  * (un lip sync, un diálogo), aparece un botón "Sound" para escucharlo; al
  * activar uno, los demás se callan. Los clips largos (un animatic) muestran
  * controles. Con "reducir movimiento" queda quieto y con controles.
@@ -46,6 +47,31 @@ export default function LoopVideo({
   const [hasAudio, setHasAudio] = useState(false)
   const [muted, setMuted] = useState(true)
   const [long, setLong] = useState(false)
+  // Solo se descarga cuando se acerca a la pantalla y solo corre mientras se ve:
+  // una página con muchos clips no los baja ni los reproduce todos a la vez
+  const [near, setNear] = useState(false)
+  const [inView, setInView] = useState(false)
+
+  useEffect(() => {
+    const v = ref.current
+    if (!v) return
+    const nearObs = new IntersectionObserver(([e]) => e.isIntersecting && setNear(true), { rootMargin: '600px 0px' })
+    const viewObs = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { threshold: 0.15 })
+    nearObs.observe(v)
+    viewObs.observe(v)
+    return () => {
+      nearObs.disconnect()
+      viewObs.disconnect()
+    }
+  }, [reduce])
+
+  useEffect(() => {
+    const v = ref.current
+    if (!v || !near || reduce) return
+    // Oculto (la otra cara de Sketch / Final): quieto hasta que se muestre
+    if (inView && !silent) v.play().catch(() => {})
+    else v.pause()
+  }, [near, inView, reduce, silent])
 
   // Otro clip activó el sonido: este se calla
   useEffect(() => {
@@ -91,15 +117,15 @@ export default function LoopVideo({
       <video
         ref={ref}
         key={reduce ? 'still' : 'loop'}
-        src={src}
-        autoPlay={!reduce}
+        src={near ? src : undefined}
         loop
         muted
         playsInline
         controls={showControls}
-        preload="metadata"
+        preload={near ? 'auto' : 'none'}
         width={width || undefined}
         height={height || undefined}
+        style={width && height ? { aspectRatio: `${width} / ${height}` } : undefined}
         aria-label={label}
         onLoadedMetadata={(e) => setLong(e.currentTarget.duration > LONG_CLIP_S)}
         onTimeUpdate={(e) => {

@@ -43,6 +43,11 @@ Next.js 15.0.3 (App Router) · React 18 · TypeScript · Tailwind 3.4 · Framer 
 - El grupo **"The Eye"** se muestra con `EyeRig.tsx`: mira hacia el cursor y parpadea con click. Usa tiras PNG en `public/pixel/eye/` (hechas con ffmpeg de los GIF del ojo; los cuadros de ida/pausa/vuelta están en `LOOK`).
 - Material: `01_Encargos\Raul\Selección` con su `proyecto.json`. Cuatro GIF de ahí tenían fondo negro pintado y se les quitó con ffmpeg (colorkey); los originales siguen en `Renders`.
 
+## Página por canciones (videoclips, 07/11/2026)
+- Si la mayoría de los epígrafes son `"Canción · Plano"` (≥2 canciones), la página de proyecto usa `SongTracks.tsx`: lista de temas arriba y cada canción como track (plano principal a todo el ancho, resto en dos columnas, Sketch / Final empezando por el final, animatic al pie). Lógica en `src/lib/utils/songTracks.ts`.
+- `LoopVideo.tsx` solo descarga un clip cuando se acerca a la pantalla y solo lo reproduce mientras se ve.
+- Material: `01_Encargos\Sidney\Nueva carpeta` (la selección; Nico la renombró) con su `proyecto.json` (slug `banana-kiwi`).
+
 ## Variables de entorno
 - Local: `.env.local` con `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `RESEND_API_KEY`. Opcional: `SUPABASE_SERVICE_ROLE_KEY` (solo local, la usa `npm run subir` para no pedir contraseña; nunca va al Worker ni al repo).
 - En el Worker (secrets): las mismas tres.

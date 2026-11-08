@@ -11,6 +11,8 @@ import { cn, typeset } from '@/lib/utils/helpers'
 import Navigation from '@/components/public/Navigation'
 import PixelSheets from '@/components/public/PixelSheets'
 import { pixelLightboxOrder } from '@/lib/utils/pixelSheets'
+import SongTracks from '@/components/public/SongTracks'
+import { isTrackProject, trackLightboxOrder } from '@/lib/utils/songTracks'
 import MediaItem, { isVisual, toLightboxItem } from '@/components/public/MediaItem'
 import { LightboxProvider, type LightboxItem } from '@/components/public/Lightbox'
 import ProcessDissolve from '@/components/public/ProcessDissolve'
@@ -130,10 +132,13 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
   const mediaList = project.media || []
   const blocks = buildBlocks(mediaList)
   // Piezas del visor, en el orden en que aparecen en la página
+  const tracksMode = project.project_type !== 'gif_sequence' && isTrackProject(mediaList)
   const ordered: ProjectMedia[] =
     project.project_type === 'gif_sequence'
       ? pixelLightboxOrder(mediaList)
-      : blocks.flatMap((b) =>
+      : tracksMode
+        ? trackLightboxOrder(mediaList)
+        : blocks.flatMap((b) =>
           b.kind === 'media' ? [b.item] : b.kind === 'dissolve' ? [b.final, b.sketch] : [b.sketch, b.final],
         )
   const lightboxItems = ordered
@@ -198,6 +203,8 @@ export default async function ProjectDetailPage({ params }: ProjectPageProps) {
           <section aria-label="Work">
             {project.project_type === 'gif_sequence' ? (
               <PixelSheets media={mediaList} title={project.title} />
+            ) : tracksMode ? (
+              <SongTracks media={mediaList} title={project.title} />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 sm:gap-x-8 gap-y-8 sm:gap-y-12">
                 {blocks.map((b, i) => {
