@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils/helpers'
  * Clip de animación (webm/mp4 subido a Storage).
  * Se reproduce en loop y sin sonido, como un GIF, solo mientras está en pantalla
  * (y no se descarga hasta que se acerca). Si el clip tiene audio
- * (un lip sync, un diálogo), aparece un botón "Sound" para escucharlo; al
- * activar uno, los demás se callan. Los clips largos (un animatic) muestran
+ * (un lip sync, un diálogo), aparece un botón "Sound" para escucharlo sin
+ * cortar la reproducción; al activar uno, los demás se callan. Los clips largos (un animatic) muestran
  * controles. Con "reducir movimiento" queda quieto y con controles.
  */
 
@@ -104,8 +104,8 @@ export default function LoopVideo({
     const next = !muted
     setMuted(next)
     if (!next) {
+      // Sigue desde donde está (no vuelve al principio)
       window.dispatchEvent(new CustomEvent(SOLO_EVENT, { detail: v }))
-      v.currentTime = 0
       v.play().catch(() => {})
     }
   }
